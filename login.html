@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>התחברות ומבחן רמה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body{font-family:'Assistant',sans-serif;background-color:#111827;color:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;overflow-x:hidden}
+        .screen{width:100%;max-width:640px;margin:auto;animation:fadeIn .6s ease-in-out}
+        .screen.hidden{display:none !important}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .gradient-text{background-image:linear-gradient(to right,#60a5fa,#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .form-container{background-color:rgba(31,41,55,.8);backdrop-filter:blur(10px);border:1px solid #374151;padding:2rem;border-radius:1.5rem;box-shadow:0 20px 25px -5px rgba(0,0,0,.2),0 8px 10px -6px rgba(0,0,0,.2)}
+        .input{background-color:#1f2937;border:2px solid #4b5563;border-radius:.5rem;padding:.75rem;color:#fff;width:100%;transition:all .2s ease}.input:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.3)}
+        .btn{display:inline-block;font-weight:600;padding:.75rem 1.5rem;border-radius:.5rem;transition:all .2s ease-in-out;border:none;cursor:pointer;width:100%}.btn-primary{background-color:#4f46e5;color:#fff}.btn-primary:hover:not(:disabled){background-color:#6366f1}.btn:disabled{opacity:.5;cursor:not-allowed}
+        .tab{padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s ease}.tab.active{color:#818cf8;border-bottom-color:#818cf8}
+        .question-container{min-height:300px}
+        .option-btn{background-color:#374151;border:2px solid #4b5563;width:100%;padding:1rem;font-size:1.125rem;transition:all .2s ease;border-radius:.5rem}.option-btn:not(:disabled):hover{background-color:#4f46e5;border-color:#818cf8}.option-btn.correct{background-color:#16a34a !important;border-color:#4ade80 !important}.option-btn.incorrect{background-color:#dc2626 !important;border-color:#f87171 !important}
+        .mic-btn.recording{animation:pulse 1.5s infinite}@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(220,38,38,.7)}70%{box-shadow:0 0 0 20px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+    </style>
+</head>
+<body>
+
+    <!-- Login/Register Screen -->
+    <div id="auth-screen" class="screen">
+        <div class="form-container">
+            <div class="flex border-b border-gray-700 mb-6">
+                <div id="login-tab-btn" class="tab active">התחברות</div>
+                <div id="register-tab-btn" class="tab">הרשמה</div>
+            </div>
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="login-email" class="block mb-2">אימייל</label>
+                    <input type="email" id="login-email" class="input" dir="ltr" required>
+                </div>
+                <div class="mb-6">
+                    <label for="login-password" class="block mb-2">סיסמה</label>
+                    <input type="password" id="login-password" class="input" dir="ltr" required>
+                </div>
+                <button type="submit" class="btn btn-primary">התחבר</button>
+            </form>
+            <!-- Register Form -->
+            <form id="register-form" class="hidden">
+                 <div class="mb-4">
+                    <label for="register-name" class="block mb-2">שם מלא</label>
+                    <input type="text" id="register-name" class="input" required>
+                </div>
+                 <div class="mb-4">
+                    <label for="register-age" class="block mb-2">גיל</label>
+                    <input type="number" id="register-age" class="input" required>
+                </div>
+                <div class="mb-4">
+                    <label for="register-email" class="block mb-2">אימייל</label>
+                    <input type="email" id="register-email" class="input" dir="ltr" required>
+                </div>
+                <div class="mb-6">
+                    <label for="register-password" class="block mb-2">סיסמה (לפחות 6 תווים)</label>
+                    <input type="password" id="register-password" class="input" dir="ltr" required>
+                </div>
+                <button type="submit" class="btn btn-primary">הירשם והתחל מבחן רמה</button>
+            </form>
+            <p id="auth-error" class="text-red-400 mt-4 text-center h-5"></p>
+        </div>
+    </div>
+
+    <!-- Placement Test Screen -->
+    <div id="test-screen" class="screen hidden">
+        <div class="form-container text-center">
+            <h1 id="test-title" class="text-3xl font-bold mb-2 gradient-text">מבחן קביעת רמה</h1>
+            <p id="test-subtitle" class="text-gray-400 mb-6">ענה על 12 השאלות הבאות כדי שנוכל להתאים לך את הרמה המושלמת.</p>
+            <div id="question-container" class="question-container flex flex-col justify-center items-center">
+                <!-- Question content is injected here -->
+            </div>
+            <p id="test-feedback" class="h-6 mt-4 text-lg"></p>
+        </div>
+    </div>
+
+    <!-- Loading/Finalizing Screen -->
+    <div id="finalizing-screen" class="screen hidden text-center">
+        <h1 class="text-3xl font-bold gradient-text">מעולה!</h1>
+        <p class="text-gray-300 text-lg">אנחנו מנתחים את התוצאות וקובעים את הרמה שלך...</p>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
+        authDomain: "english-4-you-fb80b.firebaseapp.com",
+        projectId: "english-4-you-fb80b",
+        storageBucket: "english-4-you-fb80b.appspot.com",
+        messagingSenderId: "974140187099",
+        appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    // --- DOM Elements ---
+    const screens = {
+        auth: document.getElementById('auth-screen'),
+        test: document.getElementById('test-screen'),
+        finalizing: document.getElementById('finalizing-screen')
+    };
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const authError = document.getElementById('auth-error');
+    const loginTabBtn = document.getElementById('login-tab-btn');
+    const registerTabBtn = document.getElementById('register-tab-btn');
+    const questionContainer = document.getElementById('question-container');
+    const testFeedback = document.getElementById('test-feedback');
+
+    // --- State ---
+    let currentQuestionIndex = 0;
+    let score = 0;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+    }
+    
+    // --- Test Questions from previous step ---
+    const placementTest = [
+        { type: 'en-he-mc', question: 'Dog', options: ['חתול', 'כלב', 'ציפור', 'דג'], answer: 'כלב', level: 'easy' },
+        { type: 'en-he-mc', question: 'Opportunity', options: ['בעיה', 'קושי', 'הזדמנות', 'מטרה'], answer: 'הזדמנות', level: 'medium' },
+        { type: 'en-he-mc', question: 'Ubiquitous', options: ['נדיר', 'נמצא בכל מקום', 'בלתי נראה', 'מסובך'], answer: 'נמצא בכל מקום', level: 'hard' },
+        { type: 'he-en-fill', question: 'ספר', answer: 'book', level: 'easy' },
+        { type: 'he-en-fill', question: 'ממשלה', answer: 'government', level: 'medium' },
+        { type: 'he-en-fill', question: 'להקל (כאב)', answer: 'alleviate', level: 'hard' },
+        { type: 'listen-he-mc', question: 'Family', options: ['עבודה', 'חברים', 'משפחה', 'בית ספר'], answer: 'משפחה', level: 'easy' },
+        { type: 'listen-he-mc', question: 'Develop', options: ['להרוס', 'לפתח', 'לעצור', 'לשכוח'], answer: 'לפתח', level: 'medium' },
+        { type: 'listen-he-mc', question: 'Simultaneously', options: ['בנפרד', 'אחד אחרי השני', 'בו-זמנית', 'לפעמים'], answer: 'בו-זמנית', level: 'hard' },
+        { type: 'pronounce', question: 'I can run', level: 'easy' },
+        { type: 'pronounce', question: 'The sky is blue', level: 'medium' },
+        { type: 'pronounce', question: 'Practice makes perfect', level: 'hard' },
+    ];
+
+
+    // --- UI Logic ---
+    function showScreen(screenName) {
+        Object.values(screens).forEach(s => s.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
+    }
+
+    loginTabBtn.addEventListener('click', () => {
+        loginTabBtn.classList.add('active');
+        registerTabBtn.classList.remove('active');
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        authError.textContent = '';
+    });
+
+    registerTabBtn.addEventListener('click', () => {
+        registerTabBtn.classList.add('active');
+        loginTabBtn.classList.remove('active');
+        registerForm.classList.remove('hidden');
+        loginForm.classList.add('hidden');
+        authError.textContent = '';
+    });
+
+    // --- Auth Logic ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            getDoc(doc(db, "users", user.uid)).then(userDoc => {
+                if (userDoc.exists() && userDoc.data().level) {
+                    window.location.href = 'hub.html';
+                }
+            });
+        }
+    });
+
+    registerForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('register-name').value;
+        const age = document.getElementById('register-age').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        
+        if (!name || !age) {
+            authError.textContent = 'יש למלא שם וגיל.';
+            return;
+        }
+
+        createUserWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                // Create user doc in Firestore with all details
+                setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    email: user.email,
+                    name: name,
+                    age: age,
+                    createdAt: new Date(),
+                }).then(() => {
+                    startPlacementTest();
+                });
+            })
+            .catch((error) => {
+                authError.textContent = getAuthErrorMessage(error.code);
+            });
+    });
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        signInWithEmailAndPassword(auth, email, password)
+            .then(() => { window.location.href = 'hub.html'; })
+            .catch((error) => { authError.textContent = getAuthErrorMessage(error.code); });
+    });
+
+    function getAuthErrorMessage(errorCode) {
+        switch (errorCode) {
+            case 'auth/invalid-email': return 'כתובת אימייל לא תקינה.';
+            case 'auth/user-not-found': return 'לא נמצא משתמש עם אימייל זה.';
+            case 'auth/wrong-password': return 'סיסמה שגויה.';
+            case 'auth/weak-password': return 'סיסמה חלשה מדי. נדרשים לפחות 6 תווים.';
+            case 'auth/email-already-in-use': return 'כתובת האימייל כבר בשימוש.';
+            default: return 'אירעה שגיאה. נסה שוב.';
+        }
+    }
+
+    // --- Placement Test Logic (Identical to previous step) ---
+    function startPlacementTest() {
+        currentQuestionIndex = 0;
+        score = 0;
+        showScreen('test');
+        renderQuestion();
+    }
+    
+    // The renderQuestion, handleAnswer, finishTest, and speakThis functions are identical to the previous version.
+    // They are included here for completeness of the file.
+    function renderQuestion(){if(currentQuestionIndex>=placementTest.length){finishTest();return}
+    const q=placementTest[currentQuestionIndex];let html='';switch(q.type){case'en-he-mc':html=`<p class="text-xl mb-4">תרגם את המילה הבאה:</p><p class="text-4xl font-bold mb-8" dir="ltr">${q.question}</p><div class="grid grid-cols-2 gap-4 w-full">${q.options.map(opt=>`<button class="option-btn" onclick="handleAnswer('${opt}')">${opt}</button>`).join('')}</div>`;break;case'he-en-fill':html=`<p class="text-xl mb-4">כתוב באנגלית את התרגום של:</p><p class="text-4xl font-bold mb-8">${q.question}</p><form id="fill-form" class="w-full max-w-sm"><input id="fill-input" type="text" class="input text-center w-full mb-4" dir="ltr" autofocus><button type="submit" class="btn btn-primary">בדוק</button></form>`;break;case'listen-he-mc':html=`<p class="text-xl mb-4">הקשב למילה ובחר את התרגום הנכון:</p><button class="p-4 bg-indigo-600 rounded-full mb-8" onclick="speakThis('${q.question}')"><svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 000 2v6a1 1 0 102 0V5a1 1 0 00-2 0zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V3z"></path><path fill-rule="evenodd" d="M3 8a1 1 0 011-1h.5a.5.5 0 01.5.5v4a.5.5 0 01-.5.5H4a1 1 0 01-1-1V8zm12 0a1 1 0 00-1-1h-.5a.5.5 0 00-.5.5v4a.5.5 0 00.5.5h.5a1 1 0 001-1V8z" clip-rule="evenodd"></path></svg></button><div class="grid grid-cols-2 gap-4 w-full">${q.options.map(opt=>`<button class="option-btn" onclick="handleAnswer('${opt}')">${opt}</button>`).join('')}</div>`;break;case'pronounce':html=`<p class="text-xl mb-4">לחץ על המיקרופון והקרא את המשפט:</p><p class="text-3xl font-bold mb-8" dir="ltr">${q.question}</p><button id="mic-btn" class="p-4 bg-red-600 rounded-full"><svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v2a3 3 0 01-3 3z"></path></svg></button><p class="text-sm text-gray-400 mt-4">${SpeechRecognition?'':'זיהוי דיבור אינו נתמך בדפדפן זה.'}</p>`;break}
+    questionContainer.innerHTML=html;if(q.type==='he-en-fill'){document.getElementById('fill-form').addEventListener('submit',e=>{e.preventDefault();handleAnswer(document.getElementById('fill-input').value)})}else if(q.type==='pronounce'&&SpeechRecognition){const micBtn=document.getElementById('mic-btn');micBtn.addEventListener('click',()=>{micBtn.classList.add('recording');testFeedback.textContent='מקשיב...';recognition.start()});recognition.onresult=event=>{const transcript=event.results[0][0].transcript;handleAnswer(transcript)};recognition.onend=()=>{micBtn.classList.remove('recording');if(testFeedback.textContent==='מקשיב...')testFeedback.textContent='לא הצלחתי לשמוע. נסה שוב.'}}}
+    window.handleAnswer=userAnswer=>{const q=placementTest[currentQuestionIndex];let isCorrect=false;const normalizedUserAnswer=userAnswer.trim().toLowerCase().replace(/[.,?!]/g,'');const normalizedCorrectAnswer=q.answer?q.answer.trim().toLowerCase().replace(/[.,?!]/g,''):q.question.trim().toLowerCase().replace(/[.,?!]/g,'');if(q.type==='pronounce'){isCorrect=normalizedUserAnswer.includes(normalizedCorrectAnswer)}else{isCorrect=normalizedUserAnswer===normalizedCorrectAnswer}
+    if(isCorrect){score++;testFeedback.textContent='נכון!';testFeedback.style.color='#4ade80'}else{testFeedback.textContent='טעות... ממשיכים';testFeedback.style.color='#f87171'}
+    questionContainer.querySelectorAll('button').forEach(b=>b.disabled=true);setTimeout(()=>{currentQuestionIndex++;testFeedback.textContent='';renderQuestion()},1500)};function finishTest(){showScreen('finalizing');let level;if(score<=4)level='easy';else if(score<=8)level='medium';else level='hard';const user=auth.currentUser;if(user){const userDocRef=doc(db,"users",user.uid);setDoc(userDocRef,{level:level,placementScore:score},{merge:true}).then(()=>{alert('קבענו לך רמה בהתאם לביצועיך. בהצלחה!');window.location.href='hub.html'}).catch(err=>console.error("Error saving level:",err))}}
+    window.speakThis=text=>{const utterance=new SpeechSynthesisUtterance(text);utterance.lang='en-US';window.speechSynthesis.speak(utterance)};
+
+</script>
+</body>
+</html>
