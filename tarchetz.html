@@ -2,494 +2,614 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>משחק: תרחץ - שלבים</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family:'Assistant',sans-serif; background:#000; color:#f9fafb;
-           display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem; }
-    .screen { width:100%; max-width:1200px; margin:auto; animation:fadeIn .6s ease-in-out; }
-    .screen.hidden { display:none!important; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(20px) scale(.98);} to{opacity:1;transform:translateY(0) scale(1);} }
-    .gradient-text{background-image:linear-gradient(to right,#a78bfa,#f472b6);
-                   -webkit-background-clip:text;background-clip:text;color:transparent;}
-    .btn{display:inline-block;font-weight:600;padding:.5rem 1rem;border-radius:.5rem;
-         transition:all .2s;border:none;cursor:pointer;}
-    .btn-primary{background:#4f46e5;color:#fff;}
-    .btn-primary:hover:not(:disabled){background:#6366f1;}
-    .btn-secondary{background:#374151;color:#fff;}
-    .btn-secondary:hover{background:#4b5563;}
-    .btn:disabled{opacity:.5;cursor:not-allowed;}
-    #levels-list{display:flex;flex-wrap:wrap;justify-center:space-between;gap:.5rem;}
-    #tarchetz-container{background:#111827;padding:1rem;border-radius:1rem;}
-    #tarchetz-grid{display:grid;gap:4px;}
-    .grid-cell{position:relative;background:#1f2937;border-radius:4px;aspect-ratio:1/1;}
-    .grid-cell.empty{background:transparent;}
-    .clue-cell{background:#374151;display:flex;align-items:center;justify-content:center;
-               font-size:.9rem;font-weight:600;color:#d1d5db;text-transform:uppercase;position:relative;}
-    .clue-cell.correct{background:#16a34a!important;color:#fff!important;}
-    .clue-arrow{position:absolute;width:12px;height:12px;color:#9ca3af;}
-    .arrow-right{right:4px;} .arrow-down{bottom:4px;}
-    .answer-cell input{direction:rtl;font-family:'Assistant',sans-serif;
-                        width:100%;height:100%;background:transparent;
-                        border:1px solid #4b5563;text-align:center;color:#fff;
-                        font-size:1.5rem;font-weight:700;padding:0;border-radius:4px;}
-    .answer-cell input:focus{outline:none;background:#4f46e5;border-color:#a78bfa;
-                             transform:scale(1.1);z-index:10;}
-    .answer-cell input.correct{border-color:#34d399;background:rgba(16,185,129,0.2);}
-    .answer-cell input.incorrect{border-color:#f87171;background:rgba(239,68,68,0.2);}
+    :root {
+      --bg-color: #0f172a;
+      --surface-color: #1e293b;
+      --primary-color: #4f46e5;
+      --primary-hover: #6366f1;
+      --text-color: #f1f5f9;
+      --border-color: #334155;
+      --correct-color: #16a34a;
+      --incorrect-color: #dc2626;
+    }
+    body { 
+      font-family: 'Assistant', sans-serif; 
+      background-color: var(--bg-color); 
+      color: var(--text-color); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      min-height: 100vh; 
+      padding: 1rem;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .screen { 
+      width: 100%; 
+      max-width: 1200px; 
+      margin: auto; 
+      animation: fadeIn .5s ease-in-out; 
+    }
+    .screen.hidden { 
+      display: none !important; 
+    }
+    @keyframes fadeIn { 
+      from { opacity: 0; transform: translateY(10px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+    .gradient-text { 
+      background-image: linear-gradient(to right, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent; 
+    }
+    .btn { 
+      display: inline-block; 
+      font-weight: 700; 
+      padding: .75rem 1.5rem; 
+      border-radius: .75rem; 
+      transition: all .2s; 
+      border: none; 
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-primary { 
+      background-color: var(--primary-color); 
+      color: #fff; 
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    }
+    .btn-primary:hover:not(:disabled) { 
+      background-color: var(--primary-hover); 
+      transform: translateY(-2px);
+    }
+    .btn-secondary { 
+      background-color: #374151; 
+      color: #fff; 
+    }
+    .btn-secondary:hover { 
+      background-color: #4b5563; 
+    }
+    .btn:disabled { 
+      opacity: .5; 
+      cursor: not-allowed; 
+      transform: none;
+      box-shadow: none;
+    }
+    #tarchetz-container { 
+      background-color: var(--surface-color); 
+      padding: 1rem; 
+      border-radius: 1rem; 
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    #tarchetz-grid { 
+      display: grid; 
+      gap: 5px; 
+      margin: 1rem auto;
+      max-width: 600px;
+      width: 100%;
+    }
+    .grid-cell { 
+      position: relative; 
+      background-color: #334155; 
+      border-radius: 6px; 
+      aspect-ratio: 1 / 1; 
+    }
+    .grid-cell.empty { 
+      background-color: transparent; 
+    }
+    .clue-cell { 
+      background-color: #475569; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: clamp(0.6rem, 2.5vw, 0.9rem);
+      font-weight: 600; 
+      color: #cbd5e1; 
+      text-transform: uppercase; 
+      position: relative;
+      text-align: center;
+      padding: 2px;
+    }
+    .clue-cell.correct { 
+      background-color: var(--correct-color) !important; 
+      color: #fff !important; 
+    }
+    .clue-arrow { 
+      position: absolute; 
+      width: 14px; 
+      height: 14px; 
+      color: #9ca3af;
+    }
+    .arrow-right { right: 4px; top: 50%; transform: translateY(-50%); }
+    .arrow-down  { bottom: 4px; left: 50%; transform: translateX(-50%); }
+    .clue-cell.correct .clue-arrow {
+        color: #fff;
+    }
+    .answer-cell input {
+      direction: rtl; 
+      font-family: 'Assistant', sans-serif;
+      width: 100%; 
+      height: 100%; 
+      background-color: #1f2937;
+      border: 2px solid var(--border-color); 
+      text-align: center; 
+      color: var(--text-color);
+      font-size: clamp(1.2rem, 5vw, 1.8rem); 
+      font-weight: 800; 
+      padding: 0; 
+      border-radius: 6px;
+      caret-color: var(--primary-color);
+      transition: all 0.2s ease;
+    }
+    .answer-cell input:focus { 
+      outline: none; 
+      background-color: #312e81; 
+      border-color: #a78bfa; 
+      transform: scale(1.1); 
+      z-index: 10; 
+    }
+    .answer-cell input.correct { 
+      border-color: var(--correct-color); 
+      background-color: rgba(22, 163, 74, 0.2);
+      color: #a7f3d0;
+    }
+    .answer-cell input.incorrect { 
+      border-color: var(--incorrect-color); 
+      background-color: rgba(220, 38, 38, 0.2);
+    }
+    .answer-cell input:disabled {
+        opacity: 1;
+    }
+    .level-lock { 
+      opacity: 0.4; 
+      pointer-events: none; 
+      background-image: none;
+      background-color: #4b5563;
+    }
+    #level-selection-header {
+      background-color: var(--surface-color);
+      padding: 1rem;
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+    }
   </style>
 </head>
 <body>
 
-  <!-- בחירת שלב -->
-  <div id="level-screen" class="screen text-center">
-    <h1 class="text-3xl font-bold gradient-text mb-4">בחר שלב</h1>
-    <div id="levels-list"></div>
+<!-- Level Selection Screen -->
+<div id="level-screen" class="screen text-center">
+  <div id="level-selection-header">
+    <h1 class="text-4xl md:text-5xl font-extrabold gradient-text mb-2">תרחץ</h1>
+    <p class="text-lg text-slate-300">תרגום + תשבץ = כיף!</p>
   </div>
+  <h2 id="level-difficulty-title" class="text-2xl font-bold mb-6">בחר שלב</h2>
+  <div id="levels-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"></div>
+</div>
 
-  <!-- מסך המשחק -->
-  <div id="game-screen" class="screen hidden flex-col items-center w-full">
-    <div id="tarchetz-container" class="w-full max-w-2xl">
-      <div class="flex justify-between items-center p-4">
-        <a href="hub.html" class="btn btn-secondary">חזור</a>
-        <h2 class="text-2xl font-bold">תרחץ - <span id="step-num"></span></h2>
-        <div id="timer" class="text-2xl font-mono" dir="ltr">00:00</div>
-      </div>
-      <div id="tarchetz-grid"></div>
+<!-- Game Screen -->
+<div id="game-screen" class="screen hidden w-full">
+  <div id="tarchetz-container" class="w-full max-w-2xl mx-auto">
+    <div class="flex justify-between items-center p-2 md:p-4">
+      <button id="back-to-levels-btn" class="btn btn-secondary text-sm md:text-base">חזור</button>
+      <h2 class="text-xl md:text-2xl font-bold text-center">
+        <span id="level-name"></span> - <span id="step-num"></span>
+      </h2>
+      <div id="timer" class="text-xl md:text-2xl font-mono" dir="ltr">00:00</div>
+    </div>
+    <div id="tarchetz-grid"></div>
+  </div>
+</div>
+
+<!-- Score Screen -->
+<div id="score-screen" class="screen hidden flex flex-col items-center justify-center text-center">
+  <div class="p-8 bg-gray-800 rounded-2xl max-w-lg shadow-2xl">
+    <h1 id="score-title" class="text-5xl font-bold mb-4 gradient-text">מעולה!</h1>
+    <p id="final-score" class="text-2xl md:text-4xl font-bold my-8"></p>
+    <div class="flex gap-4">
+        <button id="replay-level-btn" class="btn btn-secondary">שחק שוב</button>
+        <button id="next-level-btn" class="btn btn-primary">לשלב הבא</button>
     </div>
   </div>
+</div>
 
-  <!-- מסך סיום -->
-  <div id="score-screen" class="screen hidden flex-col items-center text-center">
-    <div class="p-8 bg-gray-800 rounded-2xl max-w-lg">
-      <h1 id="score-title" class="text-5xl font-bold mb-4 gradient-text">כל הכבוד!</h1>
-      <p id="final-score" class="text-4xl font-bold my-8"></p>
-      <button id="next-level-btn" class="btn btn-primary">הבא</button>
-    </div>
-  </div>
+<script type="module">
+  // Firebase Imports
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+  // --- DOM ELEMENTS ---
+  const levelScreen = document.getElementById('level-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const scoreScreen = document.getElementById('score-screen');
+  const levelsList = document.getElementById('levels-list');
+  const gridContainer = document.getElementById('tarchetz-grid');
+  const levelName = document.getElementById('level-name');
+  const stepNum = document.getElementById('step-num');
+  const timerEl = document.getElementById('timer');
+  const nextBtn = document.getElementById('next-level-btn');
+  const replayBtn = document.getElementById('replay-level-btn');
+  const backBtn = document.getElementById('back-to-levels-btn');
+  const levelDifficultyTitle = document.getElementById('level-difficulty-title');
 
-    // config מלא שלך
-    const firebaseConfig = {
-      apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
-      authDomain: "english-4-you-fb80b.firebaseapp.com",
-      projectId: "english-4-you-fb80b",
-      storageBucket: "english-4-you-fb80b.appspot.com",
-      messagingSenderId: "974140187099",
-      appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
-    };
+  // --- CONSTANTS & STATE ---
+  const NUM_LEVELS = 10;
+  const WORDS_PER_LEVEL = 5; // Start with 5 words, add one each level
+
+  // Word bank - filled with 30 words per difficulty level
+  const bigWordBank = {
+    easy: [
+        { en: "dog", he: "כלב" }, { en: "cat", he: "חתול" }, { en: "sun", he: "שמש" },
+        { en: "house", he: "בית" }, { en: "moon", he: "ירח" }, { en: "water", he: "מים" },
+        { en: "bread", he: "לחם" }, { en: "light", he: "אור" }, { en: "good", he: "טוב" },
+        { en: "yes", he: "כן" }, { en: "no", he: "לא" }, { en: "dad", he: "אבא" },
+        { en: "mom", he: "אמא" }, { en: "boy", he: "ילד" }, { en: "girl", he: "ילדה" },
+        { en: "book", he: "ספר" }, { en: "pen", he: "עט" }, { en: "table", he: "שולחן" },
+        { en: "chair", he: "כסא" }, { en: "door", he: "דלת" }, { en: "window", he: "חלון" },
+        { en: "star", he: "כוכב" }, { en: "flower", he: "פרח" }, { en: "tree", he: "עץ" },
+        { en: "sea", he: "ים" }, { en: "head", he: "ראש" }, { en: "hand", he: "יד" },
+        { en: "leg", he: "רגל" }, { en: "food", he: "אוכל" }, { en: "night", he: "לילה" }
+    ],
+    medium: [
+        { en: "computer", he: "מחשב" }, { en: "phone", he: "טלפון" }, { en: "car", he: "מכונית" },
+        { en: "bicycle", he: "אופניים" }, { en: "airplane", he: "מטוס" }, { en: "train", he: "רכבת" },
+        { en: "shirt", he: "חולצה" }, { en: "pants", he: "מכנסיים" }, { en: "shoes", he: "נעליים" },
+        { en: "glasses", he: "משקפיים" }, { en: "watch", he: "שעון" }, { en: "key", he: "מפתח" },
+        { en: "wallet", he: "ארנק" }, { en: "picture", he: "תמונה" }, { en: "music", he: "מוזיקה" },
+        { en: "israel", he: "ישראל" }, { en: "work", he: "עבודה" }, { en: "vacation", he: "חופש" },
+        { en: "family", he: "משפחה" }, { en: "friends", he: "חברים" }, { en: "school", he: "ביתספר" },
+        { en: "university", he: "אוניברסיטה" }, { en: "restaurant", he: "מסעדה" }, { en: "cafe", he: "ביתקפה" },
+        { en: "falafel", he: "פלאפל" }, { en: "hummus", he: "חומוס" }, { en: "country", he: "מדינה" },
+        { en: "city", he: "עיר" }, { en: "road", he: "כביש" }, { en: "sky", he: "שמיים" }
+    ],
+    hard: [
+        { en: "democracy", he: "דמוקרטיה" }, { en: "philosophy", he: "פילוסופיה" }, { en: "science", he: "מדע" },
+        { en: "technology", he: "טכנולוגיה" }, { en: "economy", he: "כלכלה" }, { en: "politics", he: "פוליטיקה" },
+        { en: "history", he: "היסטוריה" }, { en: "literature", he: "ספרות" }, { en: "art", he: "אמנות" },
+        { en: "architecture", he: "ארכיטקטורה" }, { en: "psychology", he: "פסיכולוגיה" }, { en: "communication", he: "תקשורת" },
+        { en: "environment", he: "סביבה" }, { en: "health", he: "בריאות" }, { en: "education", he: "חינוך" },
+        { en: "justice", he: "צדק" }, { en: "freedom", he: "חירות" }, { en: "responsibility", he: "אחריות" },
+        { en: "success", he: "הצלחה" }, { en: "failure", he: "כישלון" }, { en: "happiness", he: "אושר" },
+        { en: "love", he: "אהבה" }, { en: "hope", he: "תקווה" }, { en: "dream", he: "חלום" },
+        { en: "imagination", he: "דמיון" }, { en: "creativity", he: "יצירתיות" }, { en: "leadership", he: "מנהיגות" },
+        { en: "inspiration", he: "השראה" }, { en: "challenge", he: "אתגר" }, { en: "solution", he: "פתרון" }
+    ]
+  };
+
+  const state = {
+    difficulty: 'easy',
+    user: null,
+    progress: { easy: 1, medium: 1, hard: 1 },
+    currentStep: 1,
+    puzzle: null,
+    startTime: null,
+    timerInterval: null
+  };
+
+  // --- FIREBASE SETUP ---
+  let db, auth;
+  try {
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
-
-    const NUM_LEVELS = 10;
-    const BASE_WORDS = 30;
-    const WORDS_PER_LEVEL = 5;
-
-    // מאגר פשוט לדוגמה (200 מילים לרמה הקלה)
-    const bigWordBank = {
-      easy: [
-  { en: "SUN", he: "שמש" },
-  { en: "CAT", he: "חתול" },
-  { en: "DOG", he: "כלב" },
-  { en: "CAR", he: "אוטו" },
-  { en: "SKY", he: "שמיים" },
-  { en: "BIG", he: "גדול" },
-  { en: "RED", he: "אדום" },
-  { en: "ONE", he: "אחד" },
-  { en: "MAN", he: "איש" },
-  { en: "EAT", he: "אכל" },
-  { en: "BOOK", he: "ספר" },
-  { en: "HOUSE", he: "בית" },
-  { en: "TREE", he: "עץ" },
-  { en: "BIRD", he: "ציפור" },
-  { en: "MOM", he: "אמא" },
-  { en: "DAD", he: "אבא" },
-  { en: "MILK", he: "חלב" },
-  { en: "WATER", he: "מים" },
-  { en: "FISH", he: "דג" },
-  { en: "SCHOOL", he: "בית ספר" },
-  { en: "CHAIR", he: "כיסא" },
-  { en: "TABLE", he: "שולחן" },
-  { en: "BALL", he: "כדור" },
-  { en: "HAND", he: "יד" },
-  { en: "FOOT", he: "רגל" },
-  { en: "EYE", he: "עין" },
-  { en: "NOSE", he: "אף" },
-  { en: "EAR", he: "אוזן" },
-  { en: "MOUTH", he: "פה" },
-  { en: "HEAD", he: "ראש" },
-  { en: "APPLE", he: "תפוח" },
-  { en: "BANANA", he: "בננה" },
-  { en: "BREAD", he: "לחם" },
-  { en: "EGG", he: "ביצה" },
-  { en: "SOUP", he: "מרק" },
-  { en: "JUICE", he: "מיץ" },
-  { en: "HAT", he: "כובע" },
-  { en: "COAT", he: "מעיל" },
-  { en: "SHOE", he: "נעל" },
-  { en: "PEN", he: "עט" },
-  { en: "PENCIL", he: "עיפרון" },
-  { en: "BOX", he: "קופסה" },
-  { en: "BAG", he: "תיק" },
-  { en: "DOOR", he: "דלת" },
-  { en: "WINDOW", he: "חלון" },
-  { en: "FLOOR", he: "רצפה" },
-  { en: "WALL", he: "קיר" },
-  { en: "STREET", he: "רחוב" },
-  { en: "ROAD", he: "כביש" },
-  { en: "CITY", he: "עיר" },
-  { en: "SHOP", he: "חנות" },
-  { en: "BREAD", he: "לחם" },
-  { en: "CHEESE", he: "גבינה" },
-  { en: "BUTTER", he: "חמאה" },
-  { en: "CAKE", he: "עוגה" },
-  { en: "HONEY", he: "דבש" },
-  { en: "SALT", he: "מלח" },
-  { en: "SUGAR", he: "סוכר" },
-  { en: "RICE", he: "אורז" },
-  { en: "MEAT", he: "בשר" },
-  { en: "CHICKEN", he: "עוף" },
-  { en: "DUCK", he: "ברווז" },
-  { en: "HORSE", he: "סוס" },
-  { en: "COW", he: "פרה" },
-  { en: "SHEEP", he: "כבשה" },
-  { en: "GOAT", he: "עז" },
-  { en: "MOUSE", he: "עכבר" },
-  { en: "RAT", he: "חולדה" },
-  { en: "LION", he: "אריה" },
-  { en: "TIGER", he: "טיגריס" },
-  { en: "BEAR", he: "דוב" },
-  { en: "MONKEY", he: "קוף" },
-  { en: "ZOO", he: "גן חיות" },
-  { en: "FARM", he: "חווה" },
-  { en: "FIELD", he: "שדה" },
-  { en: "GARDEN", he: "גן" },
-  { en: "FLOWER", he: "פרח" },
-  { en: "GRASS", he: "דשא" },
-  { en: "TREE", he: "עץ" },
-  { en: "BRANCH", he: "ענף" },
-  { en: "LEAF", he: "עלה" },
-  { en: "ROOT", he: "שורש" },
-  { en: "SEED", he: "זרע" },
-  { en: "CLOUD", he: "ענן" },
-  { en: "RAIN", he: "גשם" },
-  { en: "WIND", he: "רוח" },
-  { en: "SNOW", he: "שלג" },
-  { en: "ICE", he: "קרח" },
-  { en: "COLD", he: "קר" },
-  { en: "HOT", he: "חם" },
-  { en: "DAY", he: "יום" },
-  { en: "NIGHT", he: "לילה" },
-  { en: "MORNING", he: "בוקר" },
-  { en: "EVENING", he: "ערב" },
-  { en: "NOON", he: "צהריים" },
-  { en: "STAR", he: "כוכב" },
-  { en: "MOON", he: "ירח" },
-  { en: "TIME", he: "זמן" },
-  { en: "CLOCK", he: "שעון" },
-  { en: "YEAR", he: "שנה" },
-  { en: "MONTH", he: "חודש" },
-  { en: "WEEK", he: "שבוע" },
-  { en: "HOUR", he: "שעה" },
-  { en: "MINUTE", he: "דקה" },
-  { en: "SECOND", he: "שנייה" },
-  { en: "SCHOOL", he: "בית ספר" },
-  { en: "CLASS", he: "כיתה" },
-  { en: "TEACHER", he: "מורה" },
-  { en: "STUDENT", he: "תלמיד" },
-  { en: "FRIEND", he: "חבר" },
-  { en: "BOY", he: "ילד" },
-  { en: "GIRL", he: "ילדה" },
-  { en: "BABY", he: "תינוק" },
-  { en: "BROTHER", he: "אח" },
-  { en: "SISTER", he: "אחות" },
-  { en: "GRANDPA", he: "סבא" },
-  { en: "GRANDMA", he: "סבתא" },
-  { en: "UNCLE", he: "דוד" },
-  { en: "AUNT", he: "דודה" },
-  { en: "COUSIN", he: "בן דוד" },
-  { en: "FAMILY", he: "משפחה" },
-  { en: "HOME", he: "בית" },
-  { en: "ROOM", he: "חדר" },
-  { en: "BED", he: "מיטה" },
-  { en: "CHAIR", he: "כיסא" },
-  { en: "TABLE", he: "שולחן" },
-  { en: "SOFA", he: "ספה" },
-  { en: "DESK", he: "שולחן כתיבה" },
-  { en: "PHONE", he: "טלפון" },
-  { en: "TV", he: "טלוויזיה" },
-  { en: "COMPUTER", he: "מחשב" },
-  { en: "TOY", he: "צעצוע" },
-  { en: "GAME", he: "משחק" },
-  { en: "PICTURE", he: "תמונה" },
-  { en: "PAINT", he: "צבע" },
-  { en: "DRAW", he: "לצייר" },
-  { en: "WRITE", he: "לכתוב" },
-  { en: "READ", he: "לקרוא" },
-  { en: "SING", he: "לשיר" },
-  { en: "DANCE", he: "לרקוד" },
-  { en: "RUN", he: "לרוץ" },
-  { en: "WALK", he: "ללכת" },
-  { en: "JUMP", he: "לקפוץ" },
-  { en: "SWIM", he: "לשחות" },
-  { en: "SIT", he: "לשבת" },
-  { en: "STAND", he: "לעמוד" },
-  { en: "SMILE", he: "לחייך" },
-  { en: "CRY", he: "לבכות" },
-  { en: "LAUGH", he: "לצחוק" },
-  { en: "SLEEP", he: "לישון" },
-  { en: "WAKE", he: "להתעורר" },
-  { en: "OPEN", he: "לפתוח" },
-  { en: "CLOSE", he: "לסגור" },
-  { en: "START", he: "להתחיל" },
-  { en: "STOP", he: "להפסיק" },
-  { en: "GO", he: "ללכת" },
-  { en: "COME", he: "לבוא" },
-  { en: "BUY", he: "לקנות" },
-  { en: "SELL", he: "למכור" },
-  { en: "PAY", he: "לשלם" },
-  { en: "DRINK", he: "לשתות" },
-  { en: "COOK", he: "לבשל" },
-  { en: "CUT", he: "לחתוך" },
-  { en: "CLEAN", he: "לנקות" },
-  { en: "FIX", he: "לתקן" },
-  { en: "FIND", he: "למצוא" },
-  { en: "LOST", he: "אבוד" },
-  { en: "LOVE", he: "לאהוב" },
-  { en: "HATE", he: "לשנוא" },
-  { en: "LIKE", he: "לאהוב" },
-  { en: "SEE", he: "לראות" },
-  { en: "LOOK", he: "להסתכל" },
-  { en: "HEAR", he: "לשמוע" },
-  { en: "LISTEN", he: "להקשיב" },
-  { en: "ASK", he: "לשאול" },
-  { en: "ANSWER", he: "לענות" },
-  { en: "QUESTION", he: "שאלה" },
-  { en: "STORY", he: "סיפור" },
-  { en: "SONG", he: "שיר" },
-  { en: "FRUIT", he: "פרי" },
-  { en: "VEGETABLE", he: "ירק" },
-  { en: "ORANGE", he: "תפוז" },
-  { en: "PEAR", he: "אגס" },
-  { en: "PLUM", he: "שזיף" },
-  { en: "PEACH", he: "אפרסק" },
-  { en: "GRAPE", he: "ענב" },
-  { en: "MELON", he: "מלון" },
-  { en: "WATERMELON", he: "אבטיח" },
-  { en: "CUCUMBER", he: "מלפפון" },
-  { en: "TOMATO", he: "עגבנייה" },
-  { en: "POTATO", he: "תפוח אדמה" },
-  { en: "ONION", he: "בצל" },
-  { en: "CARROT", he: "גזר" },
-  { en: "PEPPER", he: "פלפל" },
-  { en: "GARLIC", he: "שום" } ],
-      medium: [ /* תוכל למלא מאוחר יותר */ ],
-      hard:   [ /* תוכל למלא מאוחר יותר */ ],
-    };
-
-    const state = {
-      user: null,
-      level: "easy",
-      progress: { easy:1, medium:1, hard:1 },
-      step: 1,
-      puzzle: null,
-      startTime: null,
-      timerInterval: null
-    };
-
-    const levelScreen   = document.getElementById("level-screen");
-    const levelsList    = document.getElementById("levels-list");
-    const gameScreen    = document.getElementById("game-screen");
-    const scoreScreen   = document.getElementById("score-screen");
-    const gridContainer = document.getElementById("tarchetz-grid");
-    const stepNum       = document.getElementById("step-num");
-    const timerEl       = document.getElementById("timer");
-    const nextLevelBtn  = document.getElementById("next-level-btn");
-    const finalScoreEl  = document.getElementById("final-score");
-
-    onAuthStateChanged(auth, async user => {
-      state.user = user;
+    auth = getAuth(app);
+    db = getFirestore(app);
+    
+    onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        if (snap.exists()) {
-          state.level = snap.data().level;
-          state.progress = snap.data().tarchetzProgress || state.progress;
+        state.user = user;
+        await loadUserData(user.uid);
+      } else {
+        // If no user, try to sign in with token, otherwise sign in anonymously
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            try {
+                await signInWithCustomToken(auth, __initial_auth_token);
+                // onAuthStateChanged will be triggered again
+            } catch (e) {
+                console.error("Custom token sign-in failed, signing in anonymously.", e);
+                await signInAnonymously(auth);
+            }
+        } else {
+            await signInAnonymously(auth);
         }
       }
+    });
+
+  } catch (e) {
+    console.error("Firebase initialization failed. Running in offline mode.", e);
+    // Fallback for local development without firebase config
+    initializeAppState();
+  }
+
+  async function loadUserData(userId) {
+    const userDocRef = doc(db, 'users', userId);
+    const docSnap = await getDoc(userDocRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      state.difficulty = data.difficulty || 'easy';
+      state.progress = data.tarchetzProgress || { easy: 1, medium: 1, hard: 1 };
+    } else {
+      // Create a new document for the user with default progress
+      await setDoc(userDocRef, {
+        difficulty: state.difficulty,
+        tarchetzProgress: state.progress
+      });
+    }
+    initializeAppState();
+  }
+  
+  function initializeAppState() {
+      // This function is the main entry point after auth is ready or failed
       renderLevels();
-    });
+      setupEventListeners();
+  }
 
-    function renderLevels() {
-      levelsList.innerHTML = "";
-      for (let i=1; i<=NUM_LEVELS; i++) {
-        const btn = document.createElement("button");
-        btn.className = "btn btn-primary";
-        btn.textContent = `שלב ${i}`;
-        if (i > state.progress[state.level]) {
-          btn.disabled = true;
-          btn.classList.add("btn-secondary");
-        }
-        btn.addEventListener("click", ()=>startLevel(i));
-        levelsList.appendChild(btn);
+  // --- UI & GAME FLOW ---
+  function showScreen(screen) {
+    [levelScreen, gameScreen, scoreScreen].forEach(s => s.classList.add('hidden'));
+    screen.classList.remove('hidden');
+  }
+
+  function renderLevels() {
+    levelsList.innerHTML = '';
+    const difficultyMap = { easy: 'קל', medium: 'בינוני', hard: 'קשה' };
+    levelDifficultyTitle.textContent = `בחר שלב - ${difficultyMap[state.difficulty]}`;
+
+    for (let i = 1; i <= NUM_LEVELS; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary text-xl';
+      btn.textContent = i;
+      const isLocked = i > state.progress[state.difficulty];
+      if (isLocked) {
+        btn.classList.add('level-lock');
+        btn.innerHTML += '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>';
       }
-      levelScreen.classList.remove("hidden");
-      gameScreen.classList.add("hidden");
-      scoreScreen.classList.add("hidden");
+      btn.disabled = isLocked;
+      btn.addEventListener('click', () => startLevel(i));
+      levelsList.appendChild(btn);
     }
+    showScreen(levelScreen);
+  }
 
-    function startLevel(step) {
-      state.step = step;
-      stepNum.textContent = `שלב ${step}`;
-      // בחר מילים אקראיות
-      const count = BASE_WORDS + (step-1)*WORDS_PER_LEVEL;
-      const pool = [...bigWordBank[state.level]];
-      const arr = [];
-      for (let i=0; i<count; i++){
-        const idx = Math.floor(Math.random()*pool.length);
-        arr.push(pool.splice(idx,1)[0]);
-      }
-      state.puzzle = generatePuzzle(arr);
-      renderPuzzle(state.puzzle);
-      state.startTime = Date.now();
-      clearInterval(state.timerInterval);
-      state.timerInterval = setInterval(updateTimer,1000);
-      levelScreen.classList.add("hidden");
-      scoreScreen.classList.add("hidden");
-      gameScreen.classList.remove("hidden");
+  function startLevel(step) {
+    state.currentStep = step;
+    const difficultyMap = { easy: 'קל', medium: 'בינוני', hard: 'קשה' };
+    levelName.textContent = difficultyMap[state.difficulty];
+    stepNum.textContent = `שלב ${step}`;
+
+    // Select random words for the level without repetition
+    const wordBank = bigWordBank[state.difficulty];
+    const wordsForLevel = [...wordBank].sort(() => 0.5 - Math.random()).slice(0, WORDS_PER_LEVEL + step - 1);
+
+    state.puzzle = generatePuzzle(wordsForLevel);
+    if (!state.puzzle) {
+        alert("לא הצלחנו ליצור תשבץ עם המילים האלה. נסה לרענן.");
+        return;
     }
+    renderPuzzle(state.puzzle);
+    
+    // Start timer
+    state.startTime = Date.now();
+    clearInterval(state.timerInterval);
+    updateTimer(); // run once immediately
+    state.timerInterval = setInterval(updateTimer, 1000);
+    
+    showScreen(gameScreen);
+  }
 
-    function updateTimer() {
-      const sec = Math.floor((Date.now()-state.startTime)/1000);
-      timerEl.textContent = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
-    }
+  function updateTimer() {
+    const seconds = Math.floor((Date.now() - state.startTime) / 1000);
+    const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const secs = String(seconds % 60).padStart(2, '0');
+    timerEl.textContent = `${mins}:${secs}`;
+  }
 
-    function generatePuzzle(words) {
-      const size = Math.min(12, Math.ceil(Math.sqrt(words.length*3)));
-      const grid = Array(size).fill(0).map(()=>Array(size).fill(null));
-      const puzzleWords = [];
-      for (const w of words) {
-        const len = w.he.length+1;
-        const dir = Math.random()>0.5?"across":"down";
-        for (let i=0;i<30;i++){
-          const r = Math.floor(Math.random()*(dir==="across"?size:size-len));
-          const c = Math.floor(Math.random()*(dir==="down"?size:size-len));
-          if (canPlace(r,c,len,dir,grid)) {
-            for (let j=0;j<len;j++){
-              const rr = dir==="across"?r:r+j, cc=dir==="down"?c:c+j;
-              grid[rr][cc]=true;
+  // --- PUZZLE GENERATION & RENDERING ---
+
+  function generatePuzzle(words) {
+    // Sort words from longest to shortest to make packing easier
+    words.sort((a, b) => b.he.length - a.he.length);
+    
+    const gridSize = Math.max(8, Math.min(15, Math.ceil(Math.sqrt(words.reduce((acc, w) => acc + w.he.length, 0)) * 1.8)));
+    let grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(null));
+    const placedWords = [];
+
+    for (const word of words) {
+        let placed = false;
+        // Try placing 50 times before giving up on a word
+        for (let i = 0; i < 50; i++) {
+            const dir = Math.random() > 0.5 ? 'across' : 'down';
+            const wordLen = word.he.length + 1; // +1 for the clue cell
+            const r = Math.floor(Math.random() * (dir === 'across' ? gridSize : gridSize - wordLen + 1));
+            const c = Math.floor(Math.random() * (dir === 'down' ? gridSize : gridSize - wordLen + 1));
+
+            if (canPlace(word, r, c, dir, grid)) {
+                placeWord(word, r, c, dir, grid, placedWords.length);
+                placedWords.push({ ...word, r, c, dir, index: placedWords.length });
+                placed = true;
+                break;
             }
-            puzzleWords.push({...w,r,c,dir});
-            break;
-          }
         }
-      }
-      return {grid,words:puzzleWords,size};
     }
+    
+    return { grid, words: placedWords, size: gridSize };
+  }
 
-    function canPlace(r,c,len,dir,grid) {
-      for (let i=0;i<len;i++){
-        const rr = dir==="across"?r:r+i, cc=dir==="down"?c:c+i;
-        if (grid[rr][cc]) return false;
-      }
-      return true;
+  function canPlace(word, r, c, dir, grid) {
+    const len = word.he.length + 1;
+    for (let i = 0; i < len; i++) {
+        const rr = dir === 'across' ? r : r + i;
+        const cc = dir === 'across' ? c + i : c;
+        if (grid[rr][cc] !== null) return false;
     }
+    return true;
+  }
 
-    function renderPuzzle({grid,words,size}) {
-      gridContainer.innerHTML = "";
-      gridContainer.style.gridTemplateColumns = `repeat(${size},1fr)`;
-      const cells = Array(size).fill(0).map(()=>Array(size).fill(null));
-      words.forEach((w,idx)=>{
-        const clue = document.createElement("div");
-        clue.className="grid-cell clue-cell";
-        clue.textContent=w.en;
-        clue.dataset.idx=idx;
-        clue.innerHTML+=`<svg class="clue-arrow ${w.dir==='across'?'arrow-right':'arrow-down'}"
-          fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="${w.dir==='across'?'M17 8l4 4m0 0l-4 4m4-4H3':'M16 17l-4 4m0 0l-4-4m4 4V3'}"/>
-          </svg>`;
-        cells[w.r][w.c]=clue;
-        for (let j=0;j<w.he.length;j++){
-          const rr = w.dir==="across"?w.r:w.r+j+1;
-          const cc = w.dir==="down"?w.c:w.c+j+1;
-          const ac = document.createElement("div");
-          ac.className="grid-cell answer-cell";
-          const inp=document.createElement("input");
-          inp.type="text"; inp.maxLength=1;
-          inp.dataset.idx=idx; inp.dataset.let=j;
-          inp.dataset.correct=w.he[j];
-          ac.appendChild(inp);
-          cells[rr][cc]=ac;
+  function placeWord(word, r, c, dir, grid, wordIndex) {
+    // Place clue
+    grid[r][c] = { type: 'clue', text: word.en, wordIndex, dir };
+    // Place answer cells
+    for (let i = 0; i < word.he.length; i++) {
+        const rr = dir === 'across' ? r : r + 1 + i;
+        const cc = dir === 'across' ? c + 1 + i : c;
+        grid[rr][cc] = { 
+            type: 'answer', 
+            correctLetter: word.he[i], 
+            wordIndex, 
+            letterIndex: i 
+        };
+    }
+  }
+
+  function renderPuzzle({ grid, size }) {
+    gridContainer.innerHTML = '';
+    gridContainer.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const cellData = grid[r][c];
+        const cellElement = document.createElement('div');
+
+        if (cellData === null) {
+          cellElement.className = 'grid-cell empty';
+        } else if (cellData.type === 'clue') {
+          cellElement.className = 'grid-cell clue-cell';
+          cellElement.textContent = cellData.text;
+          cellElement.dataset.wordIndex = cellData.wordIndex;
+          const arrowDir = cellData.dir === 'across' ? 'M17 8l4 4m0 0l-4 4m4-4H3' : 'M16 17l-4 4m0 0l-4-4m4 4V3';
+          const arrowClass = cellData.dir === 'across' ? 'arrow-right' : 'arrow-down';
+          cellElement.innerHTML += `<svg class="clue-arrow ${arrowClass}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${arrowDir}"/></svg>`;
+        } else if (cellData.type === 'answer') {
+          cellElement.className = 'grid-cell answer-cell';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.maxLength = 1;
+          input.autocomplete = 'off';
+          input.dataset.wordIndex = cellData.wordIndex;
+          input.dataset.letterIndex = cellData.letterIndex;
+          input.dataset.correct = cellData.correctLetter;
+          cellElement.appendChild(input);
         }
-      });
-      for (let r=0;r<size;r++) for (let c=0;c<size;c++)
-        gridContainer.appendChild(cells[r][c]||Object.assign(document.createElement("div"),{className:"grid-cell empty"}));
-      addInputListeners();
-    }
-
-    function addInputListeners() {
-      gridContainer.querySelectorAll("input").forEach(inp=>{
-        inp.addEventListener("input",()=>{
-          const idx=+inp.dataset.idx, letIdx=+inp.dataset.let;
-          const w=state.puzzle.words[idx];
-          if (letIdx<w.he.length-1) {
-            const nxt=gridContainer.querySelector(`input[data-idx="${idx}"][data-let="${letIdx+1}"]`);
-            if(nxt) nxt.focus();
-          }
-          const grp=Array.from(gridContainer.querySelectorAll(`input[data-idx="${idx}"]`))
-                         .sort((a,b)=>a.dataset.let-b.dataset.let);
-          if(grp.every(i=>i.value)) evaluateWord(idx);
-          // כולם סיימו?
-          if(Array.from(gridContainer.querySelectorAll("input"))
-                   .every(x=>x.disabled)) finishLevel();
-        });
-        inp.addEventListener("keydown",e=>{
-          if(e.key==="Backspace"&& !inp.value){
-            const idx=+inp.dataset.idx, li=+inp.dataset.let;
-            if(li>0) {
-              const prev=gridContainer.querySelector(`input[data-idx="${idx}"][data-let="${li-1}"]`);
-              if(prev) prev.focus();
-            }
-          }
-        });
-      });
-    }
-
-    function evaluateWord(idx) {
-      const w=state.puzzle.words[idx];
-      const grp=Array.from(gridContainer.querySelectorAll(`input[data-idx="${idx}"]`))
-                     .sort((a,b)=>a.dataset.let-b.dataset.let);
-      const ans=grp.map(i=>i.value).join("");
-      if(ans.toLowerCase()===w.he.toLowerCase()){
-        grp.forEach(i=>{i.classList.add("correct");i.disabled=true;});
-        const clue=gridContainer.querySelector(`.clue-cell[data-idx="${idx}"]`);
-        if(clue) clue.classList.add("correct");
+        gridContainer.appendChild(cellElement);
       }
     }
+    addInputListeners();
+  }
 
-    function finishLevel() {
-      clearInterval(state.timerInterval);
-      finalScoreEl.textContent = `סיימת שלב ${state.step}!`;
-      scoreScreen.classList.remove("hidden");
-      gameScreen.classList.add("hidden");
-      // שמירה ופתיחת הבא
-      if(state.user && state.progress[state.level]===state.step && state.step<NUM_LEVELS){
-        state.progress[state.level]=state.step+1;
-        updateDoc(doc(db,"users",state.user.uid),{ tarchetzProgress:state.progress });
-      }
-    }
-
-    nextLevelBtn.addEventListener("click",()=>{
-      if(state.step<NUM_LEVELS) startLevel(state.step+1);
-      else renderLevels();
+  function addInputListeners() {
+    const inputs = Array.from(gridContainer.querySelectorAll('input'));
+    inputs.forEach(input => {
+      input.addEventListener('input', (e) => handleInput(e.target, inputs));
+      input.addEventListener('keydown', (e) => handleKeyDown(e, inputs));
+      input.addEventListener('focus', () => input.select());
     });
-  </script>
+  }
+  
+  function handleInput(input, allInputs) {
+      const wordIndex = +input.dataset.wordIndex;
+      const letterIndex = +input.dataset.letterIndex;
+      const word = state.puzzle.words.find(w => w.index === wordIndex);
+      
+      // Auto-focus next input in the same word
+      if (input.value && letterIndex < word.he.length - 1) {
+          const nextInput = allInputs.find(i => +i.dataset.wordIndex === wordIndex && +i.dataset.letterIndex === letterIndex + 1);
+          if (nextInput) nextInput.focus();
+      }
+
+      // Check if word is complete
+      const wordInputs = allInputs.filter(i => +i.dataset.wordIndex === wordIndex);
+      const isComplete = wordInputs.every(i => i.value);
+      
+      if (isComplete) {
+          evaluateWord(wordIndex, wordInputs);
+      } else {
+          // Clear validation if user is editing
+          wordInputs.forEach(i => i.classList.remove('correct', 'incorrect'));
+      }
+  }
+
+  function handleKeyDown(e, allInputs) {
+    const input = e.target;
+    const wordIndex = +input.dataset.wordIndex;
+    const letterIndex = +input.dataset.letterIndex;
+
+    if (e.key === 'Backspace' && !input.value && letterIndex > 0) {
+      const prevInput = allInputs.find(i => +i.dataset.wordIndex === wordIndex && +i.dataset.letterIndex === letterIndex - 1);
+      if (prevInput) prevInput.focus();
+    }
+  }
+
+  function evaluateWord(wordIndex, wordInputs) {
+    const word = state.puzzle.words.find(w => w.index === wordIndex);
+    const submittedAnswer = wordInputs.map(i => i.value).join('');
+    
+    if (submittedAnswer.toLowerCase() === word.he.toLowerCase()) {
+        wordInputs.forEach(i => {
+            i.classList.remove('incorrect');
+            i.classList.add('correct');
+            i.disabled = true;
+        });
+        const clueCell = gridContainer.querySelector(`.clue-cell[data-word-index="${wordIndex}"]`);
+        if (clueCell) clueCell.classList.add('correct');
+        
+        // Check if all words are now correct
+        checkLevelCompletion();
+    } else {
+        wordInputs.forEach(i => {
+            i.classList.remove('correct');
+            i.classList.add('incorrect');
+        });
+    }
+  }
+  
+  function checkLevelCompletion() {
+      const allInputs = gridContainer.querySelectorAll('input');
+      if (Array.from(allInputs).every(i => i.disabled)) {
+          finishLevel();
+      }
+  }
+
+  async function finishLevel() {
+    clearInterval(state.timerInterval);
+    document.getElementById('score-title').textContent = "כל הכבוד!";
+    document.getElementById('final-score').innerHTML = `סיימת את שלב ${state.currentStep} בזמן של ${timerEl.textContent}!`;
+    
+    nextBtn.disabled = state.currentStep >= NUM_LEVELS;
+    if (nextBtn.disabled) {
+        nextBtn.textContent = "סיימת הכל!";
+    } else {
+        nextBtn.textContent = "לשלב הבא";
+    }
+
+    showScreen(scoreScreen);
+
+    // Save progress if user is logged in
+    if (state.user && state.progress[state.difficulty] === state.currentStep && state.currentStep < NUM_LEVELS) {
+      const newProgress = state.currentStep + 1;
+      state.progress[state.difficulty] = newProgress;
+      try {
+        await updateDoc(doc(db, 'users', state.user.uid), {
+          tarchetzProgress: state.progress
+        });
+      } catch (e) {
+        console.error("Failed to save progress:", e);
+      }
+    }
+  }
+
+  function setupEventListeners() {
+    nextBtn.addEventListener('click', () => {
+      if (state.currentStep < NUM_LEVELS) {
+        startLevel(state.currentStep + 1);
+      }
+    });
+    replayBtn.addEventListener('click', () => startLevel(state.currentStep));
+    backBtn.addEventListener('click', () => renderLevels());
+  }
+
+</script>
 </body>
 </html>
