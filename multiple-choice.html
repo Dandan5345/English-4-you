@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק: בחירה מרובה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body{font-family:'Assistant',sans-serif;background-color:#111827;color:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;overflow-x:hidden}
+        .screen{width:100%;max-width:1200px;margin:auto;animation:fadeIn .6s ease-in-out}
+        .screen.hidden{display:none !important}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .gradient-text{background-image:linear-gradient(to right,#60a5fa,#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .btn{display:inline-block;font-weight:600;padding:.75rem 1.5rem;border-radius:.5rem;transition:all .2s ease-in-out;border:none;cursor:pointer}.btn-primary{background-color:#4f46e5;color:#fff}.btn-primary:hover{background-color:#6366f1;transform:translateY(-2px);box-shadow:0 4px 15px rgba(79,70,229,.4)}.btn-secondary{background-color:#374151;color:#fff}.btn-secondary:hover{background-color:#4b5563}
+        .option-btn{background-color:#374151;border:2px solid #4b5563;width:100%;padding:1rem;font-size:1.125rem;transition:all .2s ease;border-radius:.5rem}.option-btn:not(:disabled):hover{background-color:#4f46e5;border-color:#818cf8}.option-btn.correct{background-color:#16a34a !important;border-color:#4ade80 !important}.option-btn.incorrect{background-color:#dc2626 !important;border-color:#f87171 !important}
+        @keyframes shake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-10px)}20%,40%,60%,80%{transform:translateX(10px)}}.option-btn.incorrect{animation:shake .5s}
+        .game-container{background-color:rgba(31,41,55,.8);backdrop-filter:blur(10px);border:1px solid #374151;padding:2rem;border-radius:1.5rem;box-shadow:0 20px 25px -5px rgba(0,0,0,.2),0 8px 10px -6px rgba(0,0,0,.2)}
+        .progress-bar-container{width:100%;background-color:#374151;border-radius:9999px;height:10px;margin-bottom:1.5rem;overflow:hidden}.progress-bar{background-image:linear-gradient(to right,#818cf8,#c084fc);height:100%;border-radius:9999px;transition:width .5s ease-in-out}
+    </style>
+</head>
+<body>
+
+    <div id="user-greeting-container"></div>
+
+    <div id="loading-screen" class="screen text-center">
+        <h1 class="text-3xl font-bold gradient-text">טוען משחק...</h1>
+    </div>
+
+    <div id="game-screen" class="screen hidden flex-col items-center w-full">
+        <div class="game-container w-full max-w-3xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-3xl font-bold gradient-text">בחירה מרובה</h2>
+                <div id="progress-text" class="text-lg text-gray-300"></div>
+            </div>
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
+            </div>
+            <div id="game-content" class="min-h-[350px] flex flex-col justify-center items-center"></div>
+            <div id="feedback" class="mt-4 text-2xl font-bold h-8 text-center"></div>
+        </div>
+        <a href="hub.html" class="btn btn-secondary mt-8">חזור למרכז המשחקים</a>
+    </div>
+
+    <div id="score-screen" class="screen hidden flex-col items-center text-center">
+        <div class="game-container max-w-lg">
+            <h1 class="text-5xl font-bold mb-4 gradient-text">סיימת!</h1>
+            <p id="score-message" class="text-2xl text-gray-300 mb-2"></p>
+            <p id="final-score" class="text-7xl font-bold my-8"></p>
+            <div class="flex gap-4 justify-center">
+                <button id="play-again-btn" class="btn btn-primary">שחק שוב</button>
+                <a href="hub.html" class="btn btn-secondary">בחר משחק אחר</a>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
+        authDomain: "english-4-you-fb80b.firebaseapp.com",
+        projectId: "english-4-you-fb80b",
+        storageBucket: "english-4-you-fb80b.appspot.com",
+        messagingSenderId: "974140187099",
+        appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- SHARED HEADER SCRIPT ---
+    function createHeader(userData) {
+        const container = document.getElementById('user-greeting-container');
+        if (!container) return;
+        container.innerHTML = ''; // Clear previous header
+        const greetingDiv = document.createElement('div');
+        greetingDiv.className = 'fixed top-4 right-4 bg-gray-800 bg-opacity-80 backdrop-blur-sm text-white py-2 px-4 rounded-lg shadow-lg cursor-pointer z-50';
+        const now = new Date();
+        const hour = now.getHours();
+        let timeGreeting = (hour >= 5 && hour < 12) ? 'בוקר טוב' : (hour >= 12 && hour < 18) ? 'צהריים טובים' : 'ערב טוב';
+        greetingDiv.textContent = `${timeGreeting}, ${userData.name || 'אורח'}`;
+        greetingDiv.addEventListener('click', () => {
+            if (confirm('האם אתה בטוח שברצונך להתנתק?')) {
+                signOut(auth).catch(error => console.error('Sign out error', error));
+            }
+        });
+        container.appendChild(greetingDiv);
+    }
+    
+    // --- GAME DATA ---
+    const gameData = {
+        easy: [ { question: 'כלב', options: ['Cat', 'Dog', 'Bird', 'Fish'], answer: 'Dog' }, { question: 'תפוח', options: ['Apple', 'Banana', 'Orange', 'Grape'], answer: 'Apple' }, { question: 'בית', options: ['Home', 'House', 'Car', 'School'], answer: 'House' }, { question: 'אדום', options: ['Blue', 'Green', 'Yellow', 'Red'], answer: 'Red' }, { question: 'לשתות', options: ['Eat', 'Sleep', 'Drink', 'Run'], answer: 'Drink' } ],
+        medium: [ { question: 'להחליט', options: ['Forget', 'Remember', 'Choose', 'Decide'], answer: 'Decide' }, { question: 'הצלחה', options: ['Failure', 'Attempt', 'Success', 'Effort'], answer: 'Success' }, { question: 'ממשלה', options: ['Company', 'Organization', 'Government', 'Society'], answer: 'Government' }, { question: 'ידע', options: ['Information', 'Wisdom', 'Knowledge', 'Opinion'], answer: 'Knowledge' }, { question: 'הזדמנות', options: ['Problem', 'Chance', 'Difficulty', 'Opportunity'], answer: 'Opportunity' } ],
+        hard: [ { question: 'שאיפה (ambition)', options: ['Apathy', 'Indifference', 'Ambition', 'Lethargy'], answer: 'Ambition' }, { question: 'מקיף (comprehensive)', options: ['Specific', 'Partial', 'Comprehensive', 'Limited'], answer: 'Comprehensive' }, { question: 'שגשוג (prosperity)', options: ['Decline', 'Stagnation', 'Prosperity', 'Recession'], answer: 'Prosperity' }, { question: 'להקל (alleviate)', options: ['Aggravate', 'Exacerbate', 'Intensify', 'Alleviate'], answer: 'Alleviate' }, { question: 'מיושן (obsolete)', options: ['Modern', 'Contemporary', 'Obsolete', 'Innovative'], answer: 'Obsolete' } ]
+    };
+
+    // --- State & DOM ---
+    const state = { level: 'easy', currentQuestionIndex: 0, score: 0, questions: [], user: null };
+    const loadingScreen = document.getElementById('loading-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const scoreScreen = document.getElementById('score-screen');
+    // ... other DOM elements ...
+    const gameContent = document.getElementById('game-content');
+    const feedbackEl = document.getElementById('feedback');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+    const finalScoreEl = document.getElementById('final-score');
+    const scoreMessage = document.getElementById('score-message');
+    const playAgainBtn = document.getElementById('play-again-btn');
+
+    // --- Initialization ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // User is logged in
+            state.user = user;
+            const userDocRef = doc(db, "users", user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    createHeader(userData);
+                    state.level = userData.level || 'easy';
+                    startGame();
+                } else {
+                    window.location.href = 'login.html';
+                }
+            });
+        } else {
+            // Guest user
+            state.user = null;
+            const params = new URLSearchParams(window.location.search);
+            const level = params.get('level');
+            if (level) {
+                state.level = level;
+                startGame();
+            } else {
+                // No level for guest, redirect to home
+                window.location.href = 'index.html';
+            }
+        }
+    });
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function startGame() {
+        state.currentQuestionIndex = 0;
+        state.score = 0;
+        state.questions = shuffleArray([...gameData[state.level]]);
+        
+        loadingScreen.classList.add('hidden');
+        scoreScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+        
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (state.currentQuestionIndex >= state.questions.length) {
+            showScore();
+            return;
+        }
+        feedbackEl.textContent = '';
+        updateProgress();
+        const q = state.questions[state.currentQuestionIndex];
+        const options = shuffleArray([...q.options]);
+        gameContent.innerHTML = `
+            <p class="text-3xl md:text-4xl mb-8 text-center text-gray-200">מה התרגום של <span class="font-bold text-yellow-300">"${q.question}"</span>?</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+                ${options.map(opt => `<button class="btn option-btn" onclick="checkAnswer(this, '${opt.replace(/'/g, "\\'")}', '${q.answer.replace(/'/g, "\\'")}')">${opt}</button>`).join('')}
+            </div>`;
+    }
+
+    window.checkAnswer = (btn, selected, correct) => {
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+        const isCorrect = selected === correct;
+        
+        btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        if (isCorrect) {
+            state.score++;
+            feedbackEl.textContent = 'מעולה!';
+            feedbackEl.style.color = '#4ade80';
+        } else {
+            feedbackEl.textContent = 'לא נורא, ממשיכים ללמוד';
+            feedbackEl.style.color = '#f87171';
+        }
+
+        setTimeout(() => {
+            state.currentQuestionIndex++;
+            loadQuestion();
+        }, 1500);
+    }
+    
+    function updateProgress() {
+        progressText.textContent = `שאלה ${state.currentQuestionIndex + 1} / ${state.questions.length}`;
+        const progressPercentage = ((state.currentQuestionIndex) / state.questions.length) * 100;
+        progressBar.style.width = `${progressPercentage}%`;
+    }
+
+    async function showScore() {
+        progressBar.style.width = '100%';
+        finalScoreEl.textContent = `${state.score} / ${state.questions.length}`;
+        
+        if (state.user) {
+            // Logged-in user: save score
+            scoreMessage.textContent = "התוצאה נשמרה בפרופיל שלך!";
+            const userDocRef = doc(db, "users", state.user.uid);
+            try {
+                await updateDoc(userDocRef, {
+                    "progress.multiple-choice": arrayUnion({
+                        score: state.score,
+                        total: state.questions.length,
+                        date: new Date()
+                    })
+                });
+            } catch (error) {
+                console.error("Error updating score: ", error);
+                scoreMessage.textContent = "שגיאה בשמירת התוצאה.";
+            }
+        } else {
+            // Guest user
+            scoreMessage.textContent = "התחבר כדי לשמור את התוצאות שלך!";
+        }
+        
+        gameScreen.classList.add('hidden');
+        scoreScreen.classList.remove('hidden');
+    }
+
+    playAgainBtn.addEventListener('click', startGame);
+
+</script>
+</body>
+</html>
