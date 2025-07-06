@@ -18,15 +18,12 @@
 </head>
 <body>
 
-    <!-- This div will be populated by the shared script -->
     <div id="user-greeting-container"></div>
 
-    <!-- Loading Screen -->
     <div id="loading-screen" class="screen text-center">
         <h1 class="text-3xl font-bold gradient-text">טוען נתונים...</h1>
     </div>
 
-    <!-- Main Hub Screen -->
     <div id="hub-screen" class="screen hidden text-center">
         <h1 class="text-5xl md:text-6xl font-bold mb-2 gradient-text">מרכז המשחקים</h1>
         <p id="level-display" class="text-xl text-gray-300 mb-12"></p>
@@ -36,7 +33,6 @@
     </div>
 
 <script type="module">
-    // --- SHARED SCRIPT SECTION ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
@@ -57,19 +53,13 @@
     function createHeader(userData) {
         const container = document.getElementById('user-greeting-container');
         if (!container) return;
-
+        container.innerHTML = '';
         const greetingDiv = document.createElement('div');
         greetingDiv.className = 'fixed top-4 right-4 bg-gray-800 bg-opacity-80 backdrop-blur-sm text-white py-2 px-4 rounded-lg shadow-lg cursor-pointer z-50';
-        
         const now = new Date();
         const hour = now.getHours();
-        let timeGreeting = '';
-        if (hour >= 5 && hour < 12) timeGreeting = 'בוקר טוב';
-        else if (hour >= 12 && hour < 18) timeGreeting = 'צהריים טובים';
-        else timeGreeting = 'ערב טוב';
-
+        let timeGreeting = (hour >= 5 && hour < 12) ? 'בוקר טוב' : (hour >= 12 && hour < 18) ? 'צהריים טובים' : 'ערב טוב';
         greetingDiv.textContent = `${timeGreeting}, ${userData.name || 'אורח'}`;
-        
         greetingDiv.addEventListener('click', () => {
             if (confirm('האם אתה בטוח שברצונך להתנתק?')) {
                 signOut(auth).catch(error => console.error('Sign out error', error));
@@ -78,7 +68,6 @@
         container.appendChild(greetingDiv);
     }
 
-    // --- PAGE SPECIFIC LOGIC ---
     const loadingScreen = document.getElementById('loading-screen');
     const hubScreen = document.getElementById('hub-screen');
     const levelDisplay = document.getElementById('level-display');
@@ -90,7 +79,8 @@
         'match-the-pairs': { title: 'התאם את הזוגות', file: 'match-the-pairs.html', icon: '🔗' },
         'image-quiz': { title: 'חידון תמונות', file: 'image-quiz.html', icon: '🖼️' },
         'sentence-scramble': { title: 'סדר את המשפט', file: 'sentence-scramble.html', icon: '🔄' },
-        'listening-quiz': { title: 'הבנת הנשמע', file: 'listening-quiz.html', icon: '🎧' }
+        'listening-quiz': { title: 'הבנת הנשמע', file: 'listening-quiz.html', icon: '🎧' },
+        'crossword': { title: 'תרחץ', file: 'crossword.html', icon: '🧩' }
     };
 
     onAuthStateChanged(auth, (user) => {
@@ -99,21 +89,19 @@
             getDoc(userDocRef).then(docSnap => {
                 if (docSnap.exists()) {
                     const userData = docSnap.data();
-                    createHeader(userData); // Create the shared header
-                    initializeHub(userData); // Initialize the hub page content
+                    createHeader(userData);
+                    initializeHub(userData);
                 } else {
-                    // User exists in Auth but not in DB, something is wrong
                     window.location.href = 'login.html';
                 }
             });
         } else {
-            // Not logged in, redirect to login page
             window.location.href = 'login.html';
         }
     });
 
     function initializeHub(userData) {
-        const level = userData.level || 'easy'; // Fallback to easy
+        const level = userData.level || 'easy';
         const levelNames = { easy: 'רמה: מתחיל', medium: 'רמה: מבין עניין', hard: 'רמה: מומחה' };
         levelDisplay.textContent = levelNames[level] || 'רמה: מתחיל';
         
@@ -127,7 +115,7 @@
         gameGrid.innerHTML = '';
         for (const [key, game] of Object.entries(games)) {
             const card = document.createElement('a');
-            card.href = `${game.file}`; // The game files will get the level from the user's DB record
+            card.href = `${game.file}`;
             card.className = 'card';
             card.innerHTML = `
                 <div class="text-5xl mb-4">${game.icon}</div>
