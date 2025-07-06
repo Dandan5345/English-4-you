@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מרכז המשחקים</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body{font-family:'Assistant',sans-serif;background-color:#111827;color:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;overflow-x:hidden}
+        .screen{width:100%;max-width:1200px;margin:auto;animation:fadeIn .6s ease-in-out}
+        .screen.hidden{display:none !important}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+        .gradient-text{background-image:linear-gradient(to right,#60a5fa,#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+        .card{background-color:#1f2937;border:1px solid #374151;border-radius:1rem;padding:2rem;text-align:center;transition:transform .3s ease,box-shadow .3s ease;cursor:pointer;text-decoration:none;color:inherit}
+        .card:hover{transform:translateY(-12px) scale(1.03);box-shadow:0 25px 50px -12px rgba(99,102,241,.25);border-color:#4f46e5}
+    </style>
+</head>
+<body>
+
+    <!-- This div will be populated by the shared script -->
+    <div id="user-greeting-container"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen text-center">
+        <h1 class="text-3xl font-bold gradient-text">טוען נתונים...</h1>
+    </div>
+
+    <!-- Main Hub Screen -->
+    <div id="hub-screen" class="screen hidden text-center">
+        <h1 class="text-5xl md:text-6xl font-bold mb-2 gradient-text">מרכז המשחקים</h1>
+        <p id="level-display" class="text-xl text-gray-300 mb-12"></p>
+        <div id="game-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl">
+            <!-- Game cards will be injected here -->
+        </div>
+    </div>
+
+<script type="module">
+    // --- SHARED SCRIPT SECTION ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
+        authDomain: "english-4-you-fb80b.firebaseapp.com",
+        projectId: "english-4-you-fb80b",
+        storageBucket: "english-4-you-fb80b.appspot.com",
+        messagingSenderId: "974140187099",
+        appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    function createHeader(userData) {
+        const container = document.getElementById('user-greeting-container');
+        if (!container) return;
+
+        const greetingDiv = document.createElement('div');
+        greetingDiv.className = 'fixed top-4 right-4 bg-gray-800 bg-opacity-80 backdrop-blur-sm text-white py-2 px-4 rounded-lg shadow-lg cursor-pointer z-50';
+        
+        const now = new Date();
+        const hour = now.getHours();
+        let timeGreeting = '';
+        if (hour >= 5 && hour < 12) timeGreeting = 'בוקר טוב';
+        else if (hour >= 12 && hour < 18) timeGreeting = 'צהריים טובים';
+        else timeGreeting = 'ערב טוב';
+
+        greetingDiv.textContent = `${timeGreeting}, ${userData.name || 'אורח'}`;
+        
+        greetingDiv.addEventListener('click', () => {
+            if (confirm('האם אתה בטוח שברצונך להתנתק?')) {
+                signOut(auth).catch(error => console.error('Sign out error', error));
+            }
+        });
+        container.appendChild(greetingDiv);
+    }
+
+    // --- PAGE SPECIFIC LOGIC ---
+    const loadingScreen = document.getElementById('loading-screen');
+    const hubScreen = document.getElementById('hub-screen');
+    const levelDisplay = document.getElementById('level-display');
+    const gameGrid = document.getElementById('game-grid');
+
+    const games = {
+        'multiple-choice': { title: 'בחירה מרובה', file: 'multiple-choice.html', icon: '📝' },
+        'fill-in-the-blank': { title: 'השלם את החסר', file: 'fill-in-the-blank.html', icon: '✍️' },
+        'match-the-pairs': { title: 'התאם את הזוגות', file: 'match-the-pairs.html', icon: '🔗' },
+        'image-quiz': { title: 'חידון תמונות', file: 'image-quiz.html', icon: '🖼️' },
+        'sentence-scramble': { title: 'סדר את המשפט', file: 'sentence-scramble.html', icon: '🔄' },
+        'listening-quiz': { title: 'הבנת הנשמע', file: 'listening-quiz.html', icon: '🎧' }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            const userDocRef = doc(db, "users", user.uid);
+            getDoc(userDocRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    createHeader(userData); // Create the shared header
+                    initializeHub(userData); // Initialize the hub page content
+                } else {
+                    // User exists in Auth but not in DB, something is wrong
+                    window.location.href = 'login.html';
+                }
+            });
+        } else {
+            // Not logged in, redirect to login page
+            window.location.href = 'login.html';
+        }
+    });
+
+    function initializeHub(userData) {
+        const level = userData.level || 'easy'; // Fallback to easy
+        const levelNames = { easy: 'רמה: מתחיל', medium: 'רמה: מבין עניין', hard: 'רמה: מומחה' };
+        levelDisplay.textContent = levelNames[level] || 'רמה: מתחיל';
+        
+        populateGameHub(level);
+        
+        loadingScreen.classList.add('hidden');
+        hubScreen.classList.remove('hidden');
+    }
+
+    function populateGameHub(level) {
+        gameGrid.innerHTML = '';
+        for (const [key, game] of Object.entries(games)) {
+            const card = document.createElement('a');
+            card.href = `${game.file}`; // The game files will get the level from the user's DB record
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="text-5xl mb-4">${game.icon}</div>
+                <h3 class="text-2xl font-bold">${game.title}</h3>
+            `;
+            gameGrid.appendChild(card);
+        }
+    }
+</script>
+</body>
+</html>
