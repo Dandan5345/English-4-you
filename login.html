@@ -130,7 +130,7 @@
         recognition.maxAlternatives = 1;
     }
     
-    // --- Test Questions from previous step ---
+    // --- Test Questions ---
     const placementTest = [
         { type: 'en-he-mc', question: 'Dog', options: ['חתול', 'כלב', 'ציפור', 'דג'], answer: 'כלב', level: 'easy' },
         { type: 'en-he-mc', question: 'Opportunity', options: ['בעיה', 'קושי', 'הזדמנות', 'מטרה'], answer: 'הזדמנות', level: 'medium' },
@@ -141,11 +141,10 @@
         { type: 'listen-he-mc', question: 'Family', options: ['עבודה', 'חברים', 'משפחה', 'בית ספר'], answer: 'משפחה', level: 'easy' },
         { type: 'listen-he-mc', question: 'Develop', options: ['להרוס', 'לפתח', 'לעצור', 'לשכוח'], answer: 'לפתח', level: 'medium' },
         { type: 'listen-he-mc', question: 'Simultaneously', options: ['בנפרד', 'אחד אחרי השני', 'בו-זמנית', 'לפעמים'], answer: 'בו-זמנית', level: 'hard' },
-        { type: 'pronounce', question: 'I can run', level: 'easy' },
-        { type: 'pronounce', question: 'The sky is blue', level: 'medium' },
-        { type: 'pronounce', question: 'Practice makes perfect', level: 'hard' },
+        { type: 'pronounce', question: 'I can run', answer: 'I can run', level: 'easy' },
+        { type: 'pronounce', question: 'The sky is blue', answer: 'The sky is blue', level: 'medium' },
+        { type: 'pronounce', question: 'Practice makes perfect', answer: 'Practice makes perfect', level: 'hard' },
     ];
-
 
     // --- UI Logic ---
     function showScreen(screenName) {
@@ -232,23 +231,174 @@
         }
     }
 
-    // --- Placement Test Logic (Identical to previous step) ---
+    // --- Placement Test Logic ---
     function startPlacementTest() {
         currentQuestionIndex = 0;
         score = 0;
         showScreen('test');
         renderQuestion();
     }
-    
-    // The renderQuestion, handleAnswer, finishTest, and speakThis functions are identical to the previous version.
-    // They are included here for completeness of the file.
-    function renderQuestion(){if(currentQuestionIndex>=placementTest.length){finishTest();return}
-    const q=placementTest[currentQuestionIndex];let html='';switch(q.type){case'en-he-mc':html=`<p class="text-xl mb-4">תרגם את המילה הבאה:</p><p class="text-4xl font-bold mb-8" dir="ltr">${q.question}</p><div class="grid grid-cols-2 gap-4 w-full">${q.options.map(opt=>`<button class="option-btn" onclick="handleAnswer('${opt}')">${opt}</button>`).join('')}</div>`;break;case'he-en-fill':html=`<p class="text-xl mb-4">כתוב באנגלית את התרגום של:</p><p class="text-4xl font-bold mb-8">${q.question}</p><form id="fill-form" class="w-full max-w-sm"><input id="fill-input" type="text" class="input text-center w-full mb-4" dir="ltr" autofocus><button type="submit" class="btn btn-primary">בדוק</button></form>`;break;case'listen-he-mc':html=`<p class="text-xl mb-4">הקשב למילה ובחר את התרגום הנכון:</p><button class="p-4 bg-indigo-600 rounded-full mb-8" onclick="speakThis('${q.question}')"><svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M7 3a1 1 0 000 2v6a1 1 0 102 0V5a1 1 0 00-2 0zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V3z"></path><path fill-rule="evenodd" d="M3 8a1 1 0 011-1h.5a.5.5 0 01.5.5v4a.5.5 0 01-.5.5H4a1 1 0 01-1-1V8zm12 0a1 1 0 00-1-1h-.5a.5.5 0 00-.5.5v4a.5.5 0 00.5.5h.5a1 1 0 001-1V8z" clip-rule="evenodd"></path></svg></button><div class="grid grid-cols-2 gap-4 w-full">${q.options.map(opt=>`<button class="option-btn" onclick="handleAnswer('${opt}')">${opt}</button>`).join('')}</div>`;break;case'pronounce':html=`<p class="text-xl mb-4">לחץ על המיקרופון והקרא את המשפט:</p><p class="text-3xl font-bold mb-8" dir="ltr">${q.question}</p><button id="mic-btn" class="p-4 bg-red-600 rounded-full"><svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v2a3 3 0 01-3 3z"></path></svg></button><p class="text-sm text-gray-400 mt-4">${SpeechRecognition?'':'זיהוי דיבור אינו נתמך בדפדפן זה.'}</p>`;break}
-    questionContainer.innerHTML=html;if(q.type==='he-en-fill'){document.getElementById('fill-form').addEventListener('submit',e=>{e.preventDefault();handleAnswer(document.getElementById('fill-input').value)})}else if(q.type==='pronounce'&&SpeechRecognition){const micBtn=document.getElementById('mic-btn');micBtn.addEventListener('click',()=>{micBtn.classList.add('recording');testFeedback.textContent='מקשיב...';recognition.start()});recognition.onresult=event=>{const transcript=event.results[0][0].transcript;handleAnswer(transcript)};recognition.onend=()=>{micBtn.classList.remove('recording');if(testFeedback.textContent==='מקשיב...')testFeedback.textContent='לא הצלחתי לשמוע. נסה שוב.'}}}
-    window.handleAnswer=userAnswer=>{const q=placementTest[currentQuestionIndex];let isCorrect=false;const normalizedUserAnswer=userAnswer.trim().toLowerCase().replace(/[.,?!]/g,'');const normalizedCorrectAnswer=q.answer?q.answer.trim().toLowerCase().replace(/[.,?!]/g,''):q.question.trim().toLowerCase().replace(/[.,?!]/g,'');if(q.type==='pronounce'){isCorrect=normalizedUserAnswer.includes(normalizedCorrectAnswer)}else{isCorrect=normalizedUserAnswer===normalizedCorrectAnswer}
-    if(isCorrect){score++;testFeedback.textContent='נכון!';testFeedback.style.color='#4ade80'}else{testFeedback.textContent='טעות... ממשיכים';testFeedback.style.color='#f87171'}
-    questionContainer.querySelectorAll('button').forEach(b=>b.disabled=true);setTimeout(()=>{currentQuestionIndex++;testFeedback.textContent='';renderQuestion()},1500)};function finishTest(){showScreen('finalizing');let level;if(score<=4)level='easy';else if(score<=8)level='medium';else level='hard';const user=auth.currentUser;if(user){const userDocRef=doc(db,"users",user.uid);setDoc(userDocRef,{level:level,placementScore:score},{merge:true}).then(()=>{alert('קבענו לך רמה בהתאם לביצועיך. בהצלחה!');window.location.href='hub.html'}).catch(err=>console.error("Error saving level:",err))}}
-    window.speakThis=text=>{const utterance=new SpeechSynthesisUtterance(text);utterance.lang='en-US';window.speechSynthesis.speak(utterance)};
+
+    // פונקציית התאמת הגייה גם למבטא ישראלי:
+    function isPronunciationMatch(userAnswer, correctAnswer) {
+        // מסיר סימנים מיוחדים, אותיות לא רלוונטיות, רווחים
+        const norm = str => str.toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+        const ua = norm(userAnswer);
+        const ca = norm(correctAnswer);
+
+        // התעלמות מסדר מילים שונה ומבטאים (ישראלים מחליפים th/t/d, v/w, וכו')
+        // לא חייב תו-לתו: לפחות 75% מהמילים נכונות
+        const uaWords = ua.split(' ');
+        const caWords = ca.split(' ');
+        let matches = 0;
+        caWords.forEach(word => {
+            if (uaWords.some(w =>
+                w === word ||
+                (w.length > 2 && word.length > 2 && (
+                    w.replace(/th/g, 't').replace(/w/g, 'v') === word.replace(/th/g, 't').replace(/w/g, 'v') ||
+                    w.replace(/d/g, 't') === word.replace(/d/g, 't')
+                ))
+            )) matches++;
+        });
+        return matches / caWords.length > 0.74;
+    }
+
+    // רנדר השאלה
+    function renderQuestion() {
+        if (currentQuestionIndex >= placementTest.length) { finishTest(); return; }
+        const q = placementTest[currentQuestionIndex];
+        let html = '';
+
+        switch (q.type) {
+            case 'en-he-mc':
+                html = `
+                    <p class="text-xl mb-4">תרגם את המילה הבאה:</p>
+                    <p class="text-4xl font-bold mb-8" dir="ltr">${q.question}</p>
+                    <div class="grid grid-cols-2 gap-4 w-full">
+                        ${q.options.map(opt => `<button class="option-btn" onclick="handleAnswer('${opt}')">${opt}</button>`).join('')}
+                    </div>`;
+                break;
+            case 'he-en-fill':
+                html = `
+                    <p class="text-xl mb-4">כתוב באנגלית את התרגום של:</p>
+                    <p class="text-4xl font-bold mb-8">${q.question}</p>
+                    <form id="fill-form" class="w-full max-w-sm">
+                        <input id="fill-input" type="text" class="input text-center w-full mb-4" dir="ltr" autofocus>
+                        <button type="submit" class="btn btn-primary">בדוק</button>
+                    </form>`;
+                break;
+            case 'listen-he-mc':
+                html = `
+                    <p class="text-xl mb-4">הקשב למילה ובחר את התרגום הנכון:</p>
+                    <button class="p-4 bg-indigo-600 rounded-full mb-8" onclick="speakThis('${q.question}')">
+                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M7 3a1 1 0 000 2v6a1 1 0 102 0V5a1 1 0 00-2 0zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V3z"></path>
+                            <path fill-rule="evenodd" d="M3 8a1 1 0 011-1h.5a.5.5 0 01.5.5v4a.5.5 0 01-.5.5H4a1 1 0 01-1-1V8zm12 0a1 1 0 00-1-1h-.5a.5.5 0 00-.5.5v4a.5.5 0 00.5.5h.5a1 1 0 001-1V8z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                    <div class="grid grid-cols-2 gap-4 w-full">
+                        ${q.options.map(opt => `<button class="option-btn" onclick="handleAnswer('${opt}')">${opt}</button>`).join('')}
+                    </div>`;
+                break;
+            case 'pronounce':
+                html = `
+                    <p class="text-xl mb-4">לחץ על המיקרופון והקרא את המשפט:</p>
+                    <p class="text-3xl font-bold mb-8" dir="ltr">${q.question}</p>
+                    <button id="mic-btn" class="p-4 bg-red-600 rounded-full">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v2a3 3 0 01-3 3z"></path>
+                        </svg>
+                    </button>
+                    <p class="text-sm text-gray-400 mt-4">
+                        ${SpeechRecognition ? '' : 'זיהוי דיבור אינו נתמך בדפדפן זה.'}
+                    </p>`;
+                break;
+        }
+        questionContainer.innerHTML = html;
+
+        if (q.type === 'he-en-fill') {
+            document.getElementById('fill-form').addEventListener('submit', e => {
+                e.preventDefault();
+                handleAnswer(document.getElementById('fill-input').value);
+            });
+        } else if (q.type === 'pronounce' && SpeechRecognition) {
+            const micBtn = document.getElementById('mic-btn');
+            micBtn.addEventListener('click', () => {
+                micBtn.classList.add('recording');
+                testFeedback.textContent = 'מקשיב...';
+                try {
+                    recognition.start();
+                } catch (e) {
+                    testFeedback.textContent = 'אירעה שגיאה בהרשאה או בזיהוי.';
+                }
+            });
+            recognition.onresult = event => {
+                const transcript = event.results[0][0].transcript;
+                handleAnswer(transcript);
+            };
+            recognition.onerror = event => {
+                testFeedback.textContent = 'לא הצלחתי להאזין (בדוק הרשאות מיקרופון).';
+            };
+            recognition.onend = () => {
+                micBtn.classList.remove('recording');
+                if (testFeedback.textContent === 'מקשיב...') {
+                    testFeedback.textContent = 'לא הצלחתי לשמוע. נסה שוב.';
+                }
+            };
+        }
+    }
+
+    window.handleAnswer = userAnswer => {
+        const q = placementTest[currentQuestionIndex];
+        let isCorrect = false;
+        const normalizedUserAnswer = userAnswer.trim().toLowerCase().replace(/[.,?!]/g, '');
+        const normalizedCorrectAnswer = q.answer ? q.answer.trim().toLowerCase().replace(/[.,?!]/g, '') : q.question.trim().toLowerCase().replace(/[.,?!]/g, '');
+
+        if (q.type === 'pronounce') {
+            isCorrect = isPronunciationMatch(normalizedUserAnswer, normalizedCorrectAnswer);
+        } else {
+            isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
+        }
+
+        if (isCorrect) {
+            score++;
+            testFeedback.textContent = 'נכון!';
+            testFeedback.style.color = '#4ade80';
+        } else {
+            testFeedback.textContent = 'טעות... ממשיכים';
+            testFeedback.style.color = '#f87171';
+        }
+        questionContainer.querySelectorAll('button').forEach(b => b.disabled = true);
+        setTimeout(() => {
+            currentQuestionIndex++;
+            testFeedback.textContent = '';
+            renderQuestion();
+        }, 1500);
+    };
+
+    function finishTest() {
+        showScreen('finalizing');
+        let level;
+        if (score <= 4) level = 'easy';
+        else if (score <= 8) level = 'medium';
+        else level = 'hard';
+        const user = auth.currentUser;
+        if (user) {
+            const userDocRef = doc(db, "users", user.uid);
+            setDoc(userDocRef, { level: level, placementScore: score }, { merge: true })
+                .then(() => {
+                    alert('קבענו לך רמה בהתאם לביצועיך. בהצלחה!');
+                    window.location.href = 'hub.html';
+                })
+                .catch(err => console.error("Error saving level:", err));
+        }
+    }
+
+    window.speakThis = text => {
+        const utterance = new window.SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        window.speechSynthesis.speak(utterance);
+    };
 
 </script>
 </body>
