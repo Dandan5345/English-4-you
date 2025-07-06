@@ -2,20 +2,21 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>משחק: תרחץ - שלבים</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>משחק: תרחץ - תשבץ</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-color: #0f172a;
-      --surface-color: #1e293b;
+      --bg-color: #0c111d;
+      --surface-color: #1f2937;
       --primary-color: #4f46e5;
       --primary-hover: #6366f1;
       --text-color: #f1f5f9;
       --border-color: #334155;
       --correct-color: #16a34a;
-      --incorrect-color: #dc2626;
+      --correct-bg: rgba(22, 163, 74, 0.2);
+      --focus-color: #a78bfa;
     }
     body { 
       font-family: 'Assistant', sans-serif; 
@@ -25,12 +26,12 @@
       align-items: center; 
       justify-content: center; 
       min-height: 100vh; 
-      padding: 1rem;
+      padding: 0.5rem;
       -webkit-tap-highlight-color: transparent;
     }
     .screen { 
       width: 100%; 
-      max-width: 1200px; 
+      height: 100%;
       margin: auto; 
       animation: fadeIn .5s ease-in-out; 
     }
@@ -66,35 +67,22 @@
       background-color: var(--primary-hover); 
       transform: translateY(-2px);
     }
-    .btn-secondary { 
-      background-color: #374151; 
-      color: #fff; 
-    }
-    .btn-secondary:hover { 
-      background-color: #4b5563; 
-    }
-    .btn:disabled { 
-      opacity: .5; 
-      cursor: not-allowed; 
-      transform: none;
-      box-shadow: none;
-    }
     #tarchetz-container { 
       background-color: var(--surface-color); 
-      padding: 1rem; 
+      padding: 0.5rem; 
       border-radius: 1rem; 
       box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      width: 100%;
+      overflow: auto;
     }
     #tarchetz-grid { 
       display: grid; 
-      gap: 5px; 
+      gap: 4px; 
       margin: 1rem auto;
-      max-width: 600px;
-      width: 100%;
+      user-select: none;
     }
     .grid-cell { 
       position: relative; 
-      background-color: #334155; 
       border-radius: 6px; 
       aspect-ratio: 1 / 1; 
     }
@@ -106,11 +94,10 @@
       display: flex; 
       align-items: center; 
       justify-content: center; 
-      font-size: clamp(0.6rem, 2.5vw, 0.9rem);
+      font-size: clamp(0.5rem, 2.5vw, 0.8rem);
       font-weight: 600; 
       color: #cbd5e1; 
       text-transform: uppercase; 
-      position: relative;
       text-align: center;
       padding: 2px;
     }
@@ -120,21 +107,20 @@
     }
     .clue-arrow { 
       position: absolute; 
-      width: 14px; 
-      height: 14px; 
+      width: 12px; 
+      height: 12px; 
       color: #9ca3af;
     }
-    .arrow-right { right: 4px; top: 50%; transform: translateY(-50%); }
-    .arrow-down  { bottom: 4px; left: 50%; transform: translateX(-50%); }
-    .clue-cell.correct .clue-arrow {
-        color: #fff;
-    }
+    .clue-cell.correct .clue-arrow { color: #fff; }
+    .arrow-right { right: 2px; top: 50%; transform: translateY(-50%); }
+    .arrow-down  { bottom: 2px; left: 50%; transform: translateX(-50%); }
+    
     .answer-cell input {
       direction: rtl; 
       font-family: 'Assistant', sans-serif;
       width: 100%; 
       height: 100%; 
-      background-color: #1f2937;
+      background-color: #111827;
       border: 2px solid var(--border-color); 
       text-align: center; 
       color: var(--text-color);
@@ -148,51 +134,44 @@
     .answer-cell input:focus { 
       outline: none; 
       background-color: #312e81; 
-      border-color: #a78bfa; 
+      border-color: var(--focus-color); 
       transform: scale(1.1); 
       z-index: 10; 
     }
     .answer-cell input.correct { 
       border-color: var(--correct-color); 
-      background-color: rgba(22, 163, 74, 0.2);
+      background-color: var(--correct-bg);
       color: #a7f3d0;
-    }
-    .answer-cell input.incorrect { 
-      border-color: var(--incorrect-color); 
-      background-color: rgba(220, 38, 38, 0.2);
     }
     .answer-cell input:disabled {
         opacity: 1;
+        background-color: var(--border-color);
     }
-    .level-lock { 
-      opacity: 0.4; 
-      pointer-events: none; 
-      background-image: none;
-      background-color: #4b5563;
-    }
-    #level-selection-header {
-      background-color: var(--surface-color);
-      padding: 1rem;
-      border-radius: 1rem;
-      margin-bottom: 2rem;
+    .answer-cell input.locked {
+        background-color: var(--correct-bg);
+        border-color: var(--correct-color);
+        color: #d1fae5;
     }
   </style>
 </head>
 <body>
 
-<!-- Level Selection Screen -->
-<div id="level-screen" class="screen text-center">
-  <div id="level-selection-header">
-    <h1 class="text-4xl md:text-5xl font-extrabold gradient-text mb-2">תרחץ</h1>
-    <p class="text-lg text-slate-300">תרגום + תשבץ = כיף!</p>
+<div id="loading-screen" class="screen flex flex-col items-center justify-center text-center">
+    <h1 class="text-3xl font-bold gradient-text mb-4">טוען משחק...</h1>
+    <p>מכין לך תשבץ מאתגר במיוחד!</p>
+</div>
+
+<div id="level-screen" class="screen hidden text-center">
+  <div class="bg-surface-color p-4 rounded-xl mb-6">
+    <h1 class="text-4xl md:text-5xl font-extrabold gradient-text mb-2">תרחץ: תשבצים</h1>
+    <p class="text-lg text-slate-300">הצלב מילים, אתגר את המוח</p>
   </div>
   <h2 id="level-difficulty-title" class="text-2xl font-bold mb-6">בחר שלב</h2>
   <div id="levels-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4"></div>
 </div>
 
-<!-- Game Screen -->
 <div id="game-screen" class="screen hidden w-full">
-  <div id="tarchetz-container" class="w-full max-w-2xl mx-auto">
+  <div id="tarchetz-container" class="w-full max-w-4xl mx-auto">
     <div class="flex justify-between items-center p-2 md:p-4">
       <button id="back-to-levels-btn" class="btn btn-secondary text-sm md:text-base">חזור</button>
       <h2 class="text-xl md:text-2xl font-bold text-center">
@@ -204,7 +183,6 @@
   </div>
 </div>
 
-<!-- Score Screen -->
 <div id="score-screen" class="screen hidden flex flex-col items-center justify-center text-center">
   <div class="p-8 bg-gray-800 rounded-2xl max-w-lg shadow-2xl">
     <h1 id="score-title" class="text-5xl font-bold mb-4 gradient-text">מעולה!</h1>
@@ -223,9 +201,12 @@
   import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
   // --- DOM ELEMENTS ---
-  const levelScreen = document.getElementById('level-screen');
-  const gameScreen = document.getElementById('game-screen');
-  const scoreScreen = document.getElementById('score-screen');
+  const screens = {
+    loading: document.getElementById('loading-screen'),
+    level: document.getElementById('level-screen'),
+    game: document.getElementById('game-screen'),
+    score: document.getElementById('score-screen'),
+  };
   const levelsList = document.getElementById('levels-list');
   const gridContainer = document.getElementById('tarchetz-grid');
   const levelName = document.getElementById('level-name');
@@ -238,46 +219,19 @@
 
   // --- CONSTANTS & STATE ---
   const NUM_LEVELS = 10;
-  const WORDS_PER_LEVEL = 5; // Start with 5 words, add one each level
+  const INITIAL_WORDS = 25;
+  const WORDS_PER_LEVEL_INCREASE = 5;
 
-  // Word bank - filled with 30 words per difficulty level
   const bigWordBank = {
-    easy: [
-        { en: "dog", he: "כלב" }, { en: "cat", he: "חתול" }, { en: "sun", he: "שמש" },
-        { en: "house", he: "בית" }, { en: "moon", he: "ירח" }, { en: "water", he: "מים" },
-        { en: "bread", he: "לחם" }, { en: "light", he: "אור" }, { en: "good", he: "טוב" },
-        { en: "yes", he: "כן" }, { en: "no", he: "לא" }, { en: "dad", he: "אבא" },
-        { en: "mom", he: "אמא" }, { en: "boy", he: "ילד" }, { en: "girl", he: "ילדה" },
-        { en: "book", he: "ספר" }, { en: "pen", he: "עט" }, { en: "table", he: "שולחן" },
-        { en: "chair", he: "כסא" }, { en: "door", he: "דלת" }, { en: "window", he: "חלון" },
-        { en: "star", he: "כוכב" }, { en: "flower", he: "פרח" }, { en: "tree", he: "עץ" },
-        { en: "sea", he: "ים" }, { en: "head", he: "ראש" }, { en: "hand", he: "יד" },
-        { en: "leg", he: "רגל" }, { en: "food", he: "אוכל" }, { en: "night", he: "לילה" }
-    ],
-    medium: [
-        { en: "computer", he: "מחשב" }, { en: "phone", he: "טלפון" }, { en: "car", he: "מכונית" },
-        { en: "bicycle", he: "אופניים" }, { en: "airplane", he: "מטוס" }, { en: "train", he: "רכבת" },
-        { en: "shirt", he: "חולצה" }, { en: "pants", he: "מכנסיים" }, { en: "shoes", he: "נעליים" },
-        { en: "glasses", he: "משקפיים" }, { en: "watch", he: "שעון" }, { en: "key", he: "מפתח" },
-        { en: "wallet", he: "ארנק" }, { en: "picture", he: "תמונה" }, { en: "music", he: "מוזיקה" },
-        { en: "israel", he: "ישראל" }, { en: "work", he: "עבודה" }, { en: "vacation", he: "חופש" },
-        { en: "family", he: "משפחה" }, { en: "friends", he: "חברים" }, { en: "school", he: "ביתספר" },
-        { en: "university", he: "אוניברסיטה" }, { en: "restaurant", he: "מסעדה" }, { en: "cafe", he: "ביתקפה" },
-        { en: "falafel", he: "פלאפל" }, { en: "hummus", he: "חומוס" }, { en: "country", he: "מדינה" },
-        { en: "city", he: "עיר" }, { en: "road", he: "כביש" }, { en: "sky", he: "שמיים" }
-    ],
-    hard: [
-        { en: "democracy", he: "דמוקרטיה" }, { en: "philosophy", he: "פילוסופיה" }, { en: "science", he: "מדע" },
-        { en: "technology", he: "טכנולוגיה" }, { en: "economy", he: "כלכלה" }, { en: "politics", he: "פוליטיקה" },
-        { en: "history", he: "היסטוריה" }, { en: "literature", he: "ספרות" }, { en: "art", he: "אמנות" },
-        { en: "architecture", he: "ארכיטקטורה" }, { en: "psychology", he: "פסיכולוגיה" }, { en: "communication", he: "תקשורת" },
-        { en: "environment", he: "סביבה" }, { en: "health", he: "בריאות" }, { en: "education", he: "חינוך" },
-        { en: "justice", he: "צדק" }, { en: "freedom", he: "חירות" }, { en: "responsibility", he: "אחריות" },
-        { en: "success", he: "הצלחה" }, { en: "failure", he: "כישלון" }, { en: "happiness", he: "אושר" },
-        { en: "love", he: "אהבה" }, { en: "hope", he: "תקווה" }, { en: "dream", he: "חלום" },
-        { en: "imagination", he: "דמיון" }, { en: "creativity", he: "יצירתיות" }, { en: "leadership", he: "מנהיגות" },
-        { en: "inspiration", he: "השראה" }, { en: "challenge", he: "אתגר" }, { en: "solution", he: "פתרון" }
-    ]
+      easy: [
+        { en: "dog", he: "כלב" }, { en: "cat", he: "חתול" }, { en: "sun", he: "שמש" }, { en: "house", he: "בית" }, { en: "moon", he: "ירח" }, { en: "water", he: "מים" }, { en: "bread", he: "לחם" }, { en: "light", he: "אור" }, { en: "good", he: "טוב" }, { en: "yes", he: "כן" }, { en: "no", he: "לא" }, { en: "dad", he: "אבא" }, { en: "mom", he: "אמא" }, { en: "boy", he: "ילד" }, { en: "girl", he: "ילדה" }, { en: "book", he: "ספר" }, { en: "pen", he: "עט" }, { en: "table", he: "שולחן" }, { en: "chair", he: "כסא" }, { en: "door", he: "דלת" }, { en: "window", he: "חלון" }, { en: "star", he: "כוכב" }, { en: "flower", he: "פרח" }, { en: "tree", he: "עץ" }, { en: "sea", he: "ים" }, { en: "head", he: "ראש" }, { en: "hand", he: "יד" }, { en: "leg", he: "רגל" }, { en: "food", he: "אוכל" }, { en: "night", he: "לילה" }, { en: "day", he: "יום" }, { en: "one", he: "אחד" }, { en: "two", he: "שתיים" }, { en: "three", he: "שלוש" }, { en: "big", he: "גדול" }, { en: "small", he: "קטן" }, { en: "hot", he: "חם" }, { en: "cold", he: "קר" }, { en: "new", he: "חדש" }, { en: "old", he: "ישן" }, { en: "man", he: "איש" }, { en: "woman", he: "אישה" }, { en: "love", he: "אהבה" }, { en: "king", he: "מלך" }, { en: "queen", he: "מלכה" }, { en: "song", he: "שיר" }, { en: "road", he: "כביש" }, { en: "car", he: "אוטו" }, { en: "sky", he: "שמיים" }, { en: "earth", he: "אדמה" }
+      ],
+      medium: [
+        { en: "computer", he: "מחשב" }, { en: "phone", he: "טלפון" }, { en: "bicycle", he: "אופניים" }, { en: "airplane", he: "מטוס" }, { en: "train", he: "רכבת" }, { en: "shirt", he: "חולצה" }, { en: "pants", he: "מכנסיים" }, { en: "shoes", he: "נעליים" }, { en: "glasses", he: "משקפיים" }, { en: "watch", he: "שעון" }, { en: "key", he: "מפתח" }, { en: "wallet", he: "ארנק" }, { en: "picture", he: "תמונה" }, { en: "music", he: "מוזיקה" }, { en: "israel", he: "ישראל" }, { en: "work", he: "עבודה" }, { en: "vacation", he: "חופש" }, { en: "family", he: "משפחה" }, { en: "friends", he: "חברים" }, { en: "school", he: "ביתספר" }, { en: "university", he: "אוניברסיטה" }, { en: "restaurant", he: "מסעדה" }, { en: "falafel", he: "פלאפל" }, { en: "hummus", he: "חומוס" }, { en: "country", he: "מדינה" }, { en: "city", he: "עיר" }, { en: "morning", he: "בוקר" }, { en: "evening", he: "ערב" }, { en: "money", he: "כסף" }, { en: "time", he: "זמן" }, { en: "world", he: "עולם" }, { en: "question", he: "שאלה" }, { en: "answer", he: "תשובה" }, { en: "problem", he: "בעיה" }, { en: "solution", he: "פתרון" }, { en: "language", he: "שפה" }, { en: "student", he: "תלמיד" }, { en: "teacher", he: "מורה" }, { en: "doctor", he: "רופא" }, { en: "hospital", he: "ביתחולים" }, { en: "kitchen", he: "מטבח" }, { en: "garden", he: "גינה" }, { en: "movie", he: "סרט" }, { en: "newspaper", he: "עיתון" }, { en: "color", he: "צבע" }, { en: "number", he: "מספר" }, { en: "street", he: "רחוב" }, { en: "building", he: "בניין" }, { en: "future", he: "עתיד" }, { en: "past", he: "עבר" }
+      ],
+      hard: [
+        { en: "democracy", he: "דמוקרטיה" }, { en: "philosophy", he: "פילוסופיה" }, { en: "technology", he: "טכנולוגיה" }, { en: "economy", he: "כלכלה" }, { en: "politics", he: "פוליטיקה" }, { en: "history", he: "היסטוריה" }, { en: "literature", he: "ספרות" }, { en: "architecture", he: "ארכיטקטורה" }, { en: "psychology", he: "פסיכולוגיה" }, { en: "communication", he: "תקשורת" }, { en: "environment", he: "סביבה" }, { en: "education", he: "חינוך" }, { en: "justice", he: "צדק" }, { en: "freedom", he: "חירות" }, { en: "responsibility", he: "אחריות" }, { en: "success", he: "הצלחה" }, { en: "failure", he: "כישלון" }, { en: "happiness", he: "אושר" }, { en: "imagination", he: "דמיון" }, { en: "creativity", he: "יצירתיות" }, { en: "leadership", he: "מנהיגות" }, { en: "inspiration", he: "השראה" }, { en: "challenge", he: "אתגר" }, { en: "government", he: "ממשלה" }, { en: "information", he: "מידע" }, { en: "relationship", he: "מערכתיחסים" }, { en: "development", he: "פיתוח" }, { en: "experience", he: "ניסיון" }, { en: "knowledge", he: "ידע" }, { en: "understanding", he: "הבנה" }, { en: "personality", he: "אישיות" }, { en: "opportunity", he: "הזדמנות" }, { en: "organization", he: "ארגון" }, { en: "management", he: "ניהול" }, { en: "strategy", he: "אסטרטגיה" }, { en: "culture", he: "תרבות" }, { en: "society", he: "חברה" }, { en: "independence", he: "עצמאות" }, { en: "conversation", he: "שיחה" }, { en: "celebration", he: "חגיגה" }, { en: "championship", he: "אליפות" }, { en: "agriculture", he: "חקלאות" }, { en: "industry", he: "תעשייה" }, { en: "investment", he: "השקעה" }, { en: "negotiation", he: "משאומתן" }, { en: "advertisement", he: "פרסומת" }, { en: "congratulations", he: "ברכות" }, { en: "transportation", he: "תחבורה" }, { en: "satisfaction", he: "סיפוק" }, { en: "recommendation", he: "המלצה" }
+      ]
   };
 
   const state = {
@@ -290,8 +244,15 @@
     timerInterval: null
   };
 
-  // --- FIREBASE SETUP ---
+  // --- FIREBASE & INITIALIZATION ---
   let db, auth;
+  function showScreen(screen) {
+    Object.values(screens).forEach(s => s.classList.add('hidden'));
+    screen.classList.remove('hidden');
+  }
+
+  showScreen(screens.loading);
+
   try {
     const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
     const app = initializeApp(firebaseConfig);
@@ -303,24 +264,16 @@
         state.user = user;
         await loadUserData(user.uid);
       } else {
-        // If no user, try to sign in with token, otherwise sign in anonymously
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            try {
-                await signInWithCustomToken(auth, __initial_auth_token);
-                // onAuthStateChanged will be triggered again
-            } catch (e) {
-                console.error("Custom token sign-in failed, signing in anonymously.", e);
-                await signInAnonymously(auth);
-            }
+            try { await signInWithCustomToken(auth, __initial_auth_token); } 
+            catch (e) { await signInAnonymously(auth); }
         } else {
             await signInAnonymously(auth);
         }
       }
     });
-
   } catch (e) {
-    console.error("Firebase initialization failed. Running in offline mode.", e);
-    // Fallback for local development without firebase config
+    console.error("Firebase initialization failed. Running in offline mode.");
     initializeAppState();
   }
 
@@ -332,7 +285,6 @@
       state.difficulty = data.difficulty || 'easy';
       state.progress = data.tarchetzProgress || { easy: 1, medium: 1, hard: 1 };
     } else {
-      // Create a new document for the user with default progress
       await setDoc(userDocRef, {
         difficulty: state.difficulty,
         tarchetzProgress: state.progress
@@ -342,17 +294,11 @@
   }
   
   function initializeAppState() {
-      // This function is the main entry point after auth is ready or failed
       renderLevels();
       setupEventListeners();
   }
 
   // --- UI & GAME FLOW ---
-  function showScreen(screen) {
-    [levelScreen, gameScreen, scoreScreen].forEach(s => s.classList.add('hidden'));
-    screen.classList.remove('hidden');
-  }
-
   function renderLevels() {
     levelsList.innerHTML = '';
     const difficultyMap = { easy: 'קל', medium: 'בינוני', hard: 'קשה' };
@@ -364,40 +310,45 @@
       btn.textContent = i;
       const isLocked = i > state.progress[state.difficulty];
       if (isLocked) {
-        btn.classList.add('level-lock');
-        btn.innerHTML += '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>';
+        btn.classList.add('level-lock', 'opacity-50', 'cursor-not-allowed');
       }
       btn.disabled = isLocked;
       btn.addEventListener('click', () => startLevel(i));
       levelsList.appendChild(btn);
     }
-    showScreen(levelScreen);
+    showScreen(screens.level);
   }
 
   function startLevel(step) {
+    showScreen(screens.loading);
     state.currentStep = step;
-    const difficultyMap = { easy: 'קל', medium: 'בינוני', hard: 'קשה' };
-    levelName.textContent = difficultyMap[state.difficulty];
-    stepNum.textContent = `שלב ${step}`;
-
-    // Select random words for the level without repetition
-    const wordBank = bigWordBank[state.difficulty];
-    const wordsForLevel = [...wordBank].sort(() => 0.5 - Math.random()).slice(0, WORDS_PER_LEVEL + step - 1);
-
-    state.puzzle = generatePuzzle(wordsForLevel);
-    if (!state.puzzle) {
-        alert("לא הצלחנו ליצור תשבץ עם המילים האלה. נסה לרענן.");
-        return;
-    }
-    renderPuzzle(state.puzzle);
     
-    // Start timer
-    state.startTime = Date.now();
-    clearInterval(state.timerInterval);
-    updateTimer(); // run once immediately
-    state.timerInterval = setInterval(updateTimer, 1000);
-    
-    showScreen(gameScreen);
+    // Use a timeout to allow the loading screen to render before the heavy computation
+    setTimeout(() => {
+        const difficultyMap = { easy: 'קל', medium: 'בינוני', hard: 'קשה' };
+        levelName.textContent = difficultyMap[state.difficulty];
+        stepNum.textContent = `שלב ${step}`;
+
+        const numWords = INITIAL_WORDS + (step - 1) * WORDS_PER_LEVEL_INCREASE;
+        const wordBank = bigWordBank[state.difficulty];
+        const wordsForLevel = [...wordBank].sort(() => 0.5 - Math.random()).slice(0, numWords);
+
+        state.puzzle = generateCrossword(wordsForLevel);
+        if (!state.puzzle || state.puzzle.placedWords.length < 5) {
+            alert("לא הצלחנו ליצור תשבץ. נסה לרענן את הדף.");
+            showScreen(screens.level);
+            return;
+        }
+
+        renderPuzzle(state.puzzle);
+        
+        state.startTime = Date.now();
+        clearInterval(state.timerInterval);
+        updateTimer();
+        state.timerInterval = setInterval(updateTimer, 1000);
+        
+        showScreen(screens.game);
+    }, 100);
   }
 
   function updateTimer() {
@@ -407,161 +358,271 @@
     timerEl.textContent = `${mins}:${secs}`;
   }
 
-  // --- PUZZLE GENERATION & RENDERING ---
+  // --- CROSSWORD GENERATION ---
+  function generateCrossword(words) {
+      const sortedWords = words.map(w => ({...w, he: w.he.replace(/\s/g, '')}))
+                               .filter(w => w.he.length > 1)
+                               .sort((a, b) => b.he.length - a.he.length);
+      
+      let grid = [];
+      let placedWords = [];
+      const gridSize = 40; // Start with a large grid
 
-  function generatePuzzle(words) {
-    // Sort words from longest to shortest to make packing easier
-    words.sort((a, b) => b.he.length - a.he.length);
-    
-    const gridSize = Math.max(8, Math.min(15, Math.ceil(Math.sqrt(words.reduce((acc, w) => acc + w.he.length, 0)) * 1.8)));
-    let grid = Array(gridSize).fill(null).map(() => Array(gridSize).fill(null));
-    const placedWords = [];
+      for(let i=0; i<gridSize; i++) grid[i] = Array(gridSize).fill(null);
 
-    for (const word of words) {
-        let placed = false;
-        // Try placing 50 times before giving up on a word
-        for (let i = 0; i < 50; i++) {
-            const dir = Math.random() > 0.5 ? 'across' : 'down';
-            const wordLen = word.he.length + 1; // +1 for the clue cell
-            const r = Math.floor(Math.random() * (dir === 'across' ? gridSize : gridSize - wordLen + 1));
-            const c = Math.floor(Math.random() * (dir === 'down' ? gridSize : gridSize - wordLen + 1));
+      // Place the first word in the center
+      const firstWord = sortedWords.shift();
+      const startPos = Math.floor(gridSize / 2);
+      const dir = 'across';
+      placeWord(firstWord, startPos, startPos - Math.floor(firstWord.he.length / 2), dir, grid, placedWords);
 
-            if (canPlace(word, r, c, dir, grid)) {
-                placeWord(word, r, c, dir, grid, placedWords.length);
-                placedWords.push({ ...word, r, c, dir, index: placedWords.length });
-                placed = true;
-                break;
-            }
-        }
-    }
-    
-    return { grid, words: placedWords, size: gridSize };
+      let attempts = 0;
+      while(sortedWords.length > 0 && attempts < 10) {
+          const wordToPlace = sortedWords.shift();
+          let bestFit = null;
+
+          for (const placed of placedWords) {
+              for (let i = 0; i < wordToPlace.he.length; i++) {
+                  for (let j = 0; j < placed.he.length; j++) {
+                      if (wordToPlace.he[i] === placed.he[j]) {
+                          const newDir = placed.dir === 'across' ? 'down' : 'across';
+                          let r, c;
+                          if (newDir === 'down') {
+                              r = placed.r - i;
+                              c = placed.c + j;
+                          } else { // across
+                              r = placed.r + j;
+                              c = placed.c - i;
+                          }
+                          
+                          if (canPlace(wordToPlace, r, c, newDir, grid)) {
+                              // Prioritize more intersections
+                              const intersections = countIntersections(wordToPlace, r, c, newDir, grid);
+                              if (!bestFit || intersections > bestFit.intersections) {
+                                  bestFit = { word: wordToPlace, r, c, dir: newDir, intersections };
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+          if (bestFit) {
+              placeWord(bestFit.word, bestFit.r, bestFit.c, bestFit.dir, grid, placedWords);
+              attempts = 0;
+          } else {
+              sortedWords.push(wordToPlace); // Put it back at the end
+              attempts++;
+          }
+      }
+
+      return cropGrid(grid, placedWords);
+  }
+
+  function placeWord(word, r, c, dir, grid, placedWords) {
+      word.r = r;
+      word.c = c;
+      word.dir = dir;
+      word.id = placedWords.length;
+      placedWords.push(word);
+
+      grid[r][c] = { type: 'clue', wordId: word.id };
+      for (let k = 0; k < word.he.length; k++) {
+          const R = dir === 'across' ? r : r + k + 1;
+          const C = dir === 'down' ? c : c + k + 1;
+          if(grid[R][C] && grid[R][C].type === 'answer') {
+             grid[R][C].isIntersection = true;
+             grid[R][C].intersectingIds.push(word.id);
+          } else {
+             grid[R][C] = { 
+                type: 'answer', 
+                letter: word.he[k], 
+                wordId: word.id, 
+                letterIndex: k, 
+                isIntersection: false,
+                intersectingIds: [word.id]
+             };
+          }
+      }
   }
 
   function canPlace(word, r, c, dir, grid) {
-    const len = word.he.length + 1;
-    for (let i = 0; i < len; i++) {
-        const rr = dir === 'across' ? r : r + i;
-        const cc = dir === 'across' ? c + i : c;
-        if (grid[rr][cc] !== null) return false;
-    }
-    return true;
+      const len = word.he.length;
+      if (r < 0 || c < 0 || (dir === 'across' && c + len >= grid[0].length) || (dir === 'down' && r + len >= grid.length)) {
+          return false; // Out of bounds
+      }
+      
+      // Check clue cell
+      if (grid[r][c] !== null) return false;
+      // Check word path
+      for (let k = 0; k < len; k++) {
+          const R = dir === 'across' ? r : r + k + 1;
+          const C = dir === 'down' ? c : c + k + 1;
+          const cell = grid[R][C];
+          if (cell !== null && cell.letter !== word.he[k]) {
+              return false; // Collision
+          }
+      }
+      return true;
+  }
+  
+  function countIntersections(word, r, c, dir, grid) {
+      let count = 0;
+      for (let k = 0; k < word.he.length; k++) {
+          const R = dir === 'across' ? r : r + k + 1;
+          const C = dir === 'down' ? c : c + k + 1;
+          if (grid[R][C] !== null && grid[R][C].letter === word.he[k]) {
+              count++;
+          }
+      }
+      return count;
   }
 
-  function placeWord(word, r, c, dir, grid, wordIndex) {
-    // Place clue
-    grid[r][c] = { type: 'clue', text: word.en, wordIndex, dir };
-    // Place answer cells
-    for (let i = 0; i < word.he.length; i++) {
-        const rr = dir === 'across' ? r : r + 1 + i;
-        const cc = dir === 'across' ? c + 1 + i : c;
-        grid[rr][cc] = { 
-            type: 'answer', 
-            correctLetter: word.he[i], 
-            wordIndex, 
-            letterIndex: i 
-        };
-    }
+  function cropGrid(grid, placedWords) {
+      let minR = grid.length, minC = grid[0].length, maxR = 0, maxC = 0;
+      for (const word of placedWords) {
+          minR = Math.min(minR, word.r);
+          minC = Math.min(minC, word.c);
+          if (word.dir === 'across') {
+              maxR = Math.max(maxR, word.r);
+              maxC = Math.max(maxC, word.c + word.he.length);
+          } else { // down
+              maxR = Math.max(maxR, word.r + word.he.length);
+              maxC = Math.max(maxC, word.c);
+          }
+      }
+
+      const croppedGrid = [];
+      for (let r = minR; r <= maxR; r++) {
+          croppedGrid.push(grid[r].slice(minC, maxC + 1));
+      }
+      
+      return { grid: croppedGrid, placedWords };
   }
 
-  function renderPuzzle({ grid, size }) {
+  // --- PUZZLE RENDERING & INTERACTION ---
+  function renderPuzzle({ grid, placedWords }) {
     gridContainer.innerHTML = '';
-    gridContainer.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+    const rows = grid.length;
+    const cols = grid[0].length;
+    gridContainer.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
 
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        const cellData = grid[r][c];
+    grid.forEach((row, r) => {
+      row.forEach((cellData, c) => {
         const cellElement = document.createElement('div');
+        cellElement.className = 'grid-cell';
 
-        if (cellData === null) {
-          cellElement.className = 'grid-cell empty';
+        if (!cellData) {
+          cellElement.classList.add('empty');
         } else if (cellData.type === 'clue') {
-          cellElement.className = 'grid-cell clue-cell';
-          cellElement.textContent = cellData.text;
-          cellElement.dataset.wordIndex = cellData.wordIndex;
-          const arrowDir = cellData.dir === 'across' ? 'M17 8l4 4m0 0l-4 4m4-4H3' : 'M16 17l-4 4m0 0l-4-4m4 4V3';
-          const arrowClass = cellData.dir === 'across' ? 'arrow-right' : 'arrow-down';
-          cellElement.innerHTML += `<svg class="clue-arrow ${arrowClass}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${arrowDir}"/></svg>`;
+          const word = placedWords.find(w => w.id === cellData.wordId);
+          cellElement.classList.add('clue-cell');
+          cellElement.textContent = word.en;
+          cellElement.dataset.wordId = word.id;
+          const arrowDir = word.dir === 'across' ? 'M9 5l7 7-7 7' : 'M5 9l7 7 7-7';
+          const arrowClass = word.dir === 'across' ? 'arrow-right' : 'arrow-down';
+          cellElement.innerHTML += `<svg class="clue-arrow ${arrowClass}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="${arrowDir}"/></svg>`;
         } else if (cellData.type === 'answer') {
-          cellElement.className = 'grid-cell answer-cell';
+          cellElement.classList.add('answer-cell');
           const input = document.createElement('input');
           input.type = 'text';
           input.maxLength = 1;
           input.autocomplete = 'off';
-          input.dataset.wordIndex = cellData.wordIndex;
-          input.dataset.letterIndex = cellData.letterIndex;
-          input.dataset.correct = cellData.correctLetter;
+          input.dataset.wordIds = JSON.stringify(cellData.intersectingIds);
+          input.dataset.letterIndex = cellData.letterIndex; // This might be tricky for intersections
+          input.dataset.correct = cellData.letter;
+          if (cellData.isIntersection) {
+              input.value = cellData.letter;
+              input.disabled = true;
+              input.classList.add('locked');
+          }
           cellElement.appendChild(input);
         }
         gridContainer.appendChild(cellElement);
-      }
-    }
+      });
+    });
     addInputListeners();
   }
 
   function addInputListeners() {
-    const inputs = Array.from(gridContainer.querySelectorAll('input'));
+    const inputs = Array.from(gridContainer.querySelectorAll('input:not(:disabled)'));
     inputs.forEach(input => {
-      input.addEventListener('input', (e) => handleInput(e.target, inputs));
-      input.addEventListener('keydown', (e) => handleKeyDown(e, inputs));
-      input.addEventListener('focus', () => input.select());
+      input.addEventListener('input', (e) => handleInput(e.target));
+      input.addEventListener('keydown', (e) => handleKeyDown(e));
+      input.addEventListener('focus', (e) => handleFocus(e.target));
     });
   }
   
-  function handleInput(input, allInputs) {
-      const wordIndex = +input.dataset.wordIndex;
-      const letterIndex = +input.dataset.letterIndex;
-      const word = state.puzzle.words.find(w => w.index === wordIndex);
+  function handleInput(input) {
+      const wordIds = JSON.parse(input.dataset.wordIds);
       
-      // Auto-focus next input in the same word
-      if (input.value && letterIndex < word.he.length - 1) {
-          const nextInput = allInputs.find(i => +i.dataset.wordIndex === wordIndex && +i.dataset.letterIndex === letterIndex + 1);
-          if (nextInput) nextInput.focus();
+      // Auto-focus next input
+      const currentWordId = state.activeWordId;
+      const currentWord = state.puzzle.placedWords.find(w => w.id === currentWordId);
+      if (input.value && currentWord) {
+          const allWordInputs = Array.from(gridContainer.querySelectorAll(`input`))
+              .filter(i => JSON.parse(i.dataset.wordIds).includes(currentWordId));
+          const currentIndex = allWordInputs.findIndex(i => i === input);
+          if (currentIndex < allWordInputs.length - 1) {
+              const nextInput = allWordInputs[currentIndex + 1];
+              if(!nextInput.disabled) nextInput.focus();
+              else { // Skip locked letters
+                  let nextFocus = allWordInputs[currentIndex + 2];
+                  if(nextFocus && !nextFocus.disabled) nextFocus.focus();
+              }
+          }
       }
-
-      // Check if word is complete
-      const wordInputs = allInputs.filter(i => +i.dataset.wordIndex === wordIndex);
-      const isComplete = wordInputs.every(i => i.value);
       
-      if (isComplete) {
-          evaluateWord(wordIndex, wordInputs);
-      } else {
-          // Clear validation if user is editing
-          wordInputs.forEach(i => i.classList.remove('correct', 'incorrect'));
-      }
+      // Evaluate all words this input belongs to
+      wordIds.forEach(id => evaluateWord(id));
   }
 
-  function handleKeyDown(e, allInputs) {
-    const input = e.target;
-    const wordIndex = +input.dataset.wordIndex;
-    const letterIndex = +input.dataset.letterIndex;
-
-    if (e.key === 'Backspace' && !input.value && letterIndex > 0) {
-      const prevInput = allInputs.find(i => +i.dataset.wordIndex === wordIndex && +i.dataset.letterIndex === letterIndex - 1);
-      if (prevInput) prevInput.focus();
+  function handleKeyDown(e) {
+    if (e.key === 'Backspace' && !e.target.value) {
+        const currentWordId = state.activeWordId;
+        const currentWord = state.puzzle.placedWords.find(w => w.id === currentWordId);
+        if (currentWord) {
+            const allWordInputs = Array.from(gridContainer.querySelectorAll(`input`))
+                .filter(i => JSON.parse(i.dataset.wordIds).includes(currentWordId));
+            const currentIndex = allWordInputs.findIndex(i => i === e.target);
+            if (currentIndex > 0) {
+                const prevInput = allWordInputs[currentIndex - 1];
+                if(!prevInput.disabled) prevInput.focus();
+                else { // Skip locked letters
+                    let prevFocus = allWordInputs[currentIndex - 2];
+                    if(prevFocus && !prevFocus.disabled) prevFocus.focus();
+                }
+            }
+        }
     }
   }
+  
+  function handleFocus(input) {
+      const wordIds = JSON.parse(input.dataset.wordIds);
+      // Heuristic: set active word to the first ID, or keep current if it's one of them
+      if (!wordIds.includes(state.activeWordId)) {
+        state.activeWordId = wordIds[0];
+      }
+      input.select();
+  }
 
-  function evaluateWord(wordIndex, wordInputs) {
-    const word = state.puzzle.words.find(w => w.index === wordIndex);
-    const submittedAnswer = wordInputs.map(i => i.value).join('');
+  function evaluateWord(wordId) {
+    const word = state.puzzle.placedWords.find(w => w.id === wordId);
+    if (!word) return;
+
+    const wordInputs = Array.from(gridContainer.querySelectorAll('input'))
+      .filter(i => JSON.parse(i.dataset.wordIds).includes(wordId));
     
-    if (submittedAnswer.toLowerCase() === word.he.toLowerCase()) {
+    if (wordInputs.every(i => i.value)) {
+      const submittedAnswer = wordInputs.map(i => i.value).join('');
+      if (submittedAnswer.toLowerCase() === word.he.toLowerCase()) {
         wordInputs.forEach(i => {
-            i.classList.remove('incorrect');
-            i.classList.add('correct');
-            i.disabled = true;
+          i.classList.add('correct');
+          i.disabled = true;
         });
-        const clueCell = gridContainer.querySelector(`.clue-cell[data-word-index="${wordIndex}"]`);
+        const clueCell = gridContainer.querySelector(`.clue-cell[data-word-id="${wordId}"]`);
         if (clueCell) clueCell.classList.add('correct');
-        
-        // Check if all words are now correct
         checkLevelCompletion();
-    } else {
-        wordInputs.forEach(i => {
-            i.classList.remove('correct');
-            i.classList.add('incorrect');
-        });
+      }
     }
   }
   
@@ -574,22 +635,16 @@
 
   async function finishLevel() {
     clearInterval(state.timerInterval);
-    document.getElementById('score-title').textContent = "כל הכבוד!";
-    document.getElementById('final-score').innerHTML = `סיימת את שלב ${state.currentStep} בזמן של ${timerEl.textContent}!`;
+    score-title.textContent = "כל הכבוד!";
+    final-score.innerHTML = `סיימת את שלב ${state.currentStep} בזמן של ${timerEl.textContent}!`;
     
     nextBtn.disabled = state.currentStep >= NUM_LEVELS;
-    if (nextBtn.disabled) {
-        nextBtn.textContent = "סיימת הכל!";
-    } else {
-        nextBtn.textContent = "לשלב הבא";
-    }
+    nextBtn.textContent = nextBtn.disabled ? "סיימת הכל!" : "לשלב הבא";
 
-    showScreen(scoreScreen);
+    showScreen(screens.score);
 
-    // Save progress if user is logged in
     if (state.user && state.progress[state.difficulty] === state.currentStep && state.currentStep < NUM_LEVELS) {
-      const newProgress = state.currentStep + 1;
-      state.progress[state.difficulty] = newProgress;
+      state.progress[state.difficulty] = state.currentStep + 1;
       try {
         await updateDoc(doc(db, 'users', state.user.uid), {
           tarchetzProgress: state.progress
@@ -602,14 +657,11 @@
 
   function setupEventListeners() {
     nextBtn.addEventListener('click', () => {
-      if (state.currentStep < NUM_LEVELS) {
-        startLevel(state.currentStep + 1);
-      }
+      if (state.currentStep < NUM_LEVELS) startLevel(state.currentStep + 1);
     });
     replayBtn.addEventListener('click', () => startLevel(state.currentStep));
     backBtn.addEventListener('click', () => renderLevels());
   }
-
 </script>
 </body>
 </html>
