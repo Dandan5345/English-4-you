@@ -7,90 +7,94 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Assistant', sans-serif; background: #000; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
-    .screen { width: 100%; max-width: 1200px; margin: auto; animation: fadeIn .6s ease-in-out; }
-    .screen.hidden { display: none !important; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-    .gradient-text { background-image: linear-gradient(to right,#a78bfa,#f472b6);-webkit-background-clip:text;background-clip:text;color:transparent; }
-    .btn { display: inline-block; font-weight: 600; padding: .5rem 1rem; border-radius: .5rem; transition: all .2s; border: none; cursor: pointer;}
-    .btn-primary { background: #4f46e5; color: #fff; }
-    .btn-primary:hover:not(:disabled) { background: #6366f1; }
-    .btn-secondary { background: #374151; color: #fff; }
-    .btn-secondary:hover { background: #4b5563; }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-    #tarchetz-container { background: #111827; padding: 1rem; border-radius: 1rem; }
-    #tarchetz-grid { display: grid; gap: 4px; }
-    .grid-cell { position: relative; background: #1f2937; border-radius: 4px; aspect-ratio: 1/1; }
-    .grid-cell.empty { background: transparent; }
-    .clue-cell { background: #374151; display: flex; align-items: center; justify-content: center; font-size: .9rem; font-weight: 600; color: #d1d5db; text-transform: uppercase; position: relative; }
-    .clue-cell.correct { background: #16a34a !important; color: #fff !important; }
-    .clue-arrow { position: absolute; width: 12px; height: 12px; color: #9ca3af; }
-    .arrow-right { right: 4px; }
-    .arrow-down  { bottom: 4px; }
-    .answer-cell input {
-      direction: rtl; font-family: 'Assistant', sans-serif;
-      width: 100%; height: 100%; background: transparent;
-      border: 1px solid #4b5563; text-align: center; color: #fff;
-      font-size: 1.5rem; font-weight: 700; padding: 0; border-radius: 4px;
-    }
-    .answer-cell input:focus { outline: none; background: #4f46e5; border-color: #a78bfa; transform: scale(1.1); z-index: 10; }
-    .answer-cell input.correct { border-color: #34d399; background: rgba(16,185,129,0.2);}
-    .answer-cell input.incorrect { border-color: #f87171; background: rgba(239,68,68,0.2);}
-    .level-lock { opacity: 0.3; pointer-events: none; }
+    body { font-family:'Assistant',sans-serif; background:#000; color:#f9fafb;
+           display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem; }
+    .screen { width:100%; max-width:1200px; margin:auto; animation:fadeIn .6s ease-in-out; }
+    .screen.hidden { display:none!important; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(20px) scale(.98);} to{opacity:1;transform:translateY(0) scale(1);} }
+    .gradient-text{background-image:linear-gradient(to right,#a78bfa,#f472b6);
+                   -webkit-background-clip:text;background-clip:text;color:transparent;}
+    .btn{display:inline-block;font-weight:600;padding:.5rem 1rem;border-radius:.5rem;
+         transition:all .2s;border:none;cursor:pointer;}
+    .btn-primary{background:#4f46e5;color:#fff;}
+    .btn-primary:hover:not(:disabled){background:#6366f1;}
+    .btn-secondary{background:#374151;color:#fff;}
+    .btn-secondary:hover{background:#4b5563;}
+    .btn:disabled{opacity:.5;cursor:not-allowed;}
+    #levels-list{display:flex;flex-wrap:wrap;justify-center:space-between;gap:.5rem;}
+    #tarchetz-container{background:#111827;padding:1rem;border-radius:1rem;}
+    #tarchetz-grid{display:grid;gap:4px;}
+    .grid-cell{position:relative;background:#1f2937;border-radius:4px;aspect-ratio:1/1;}
+    .grid-cell.empty{background:transparent;}
+    .clue-cell{background:#374151;display:flex;align-items:center;justify-content:center;
+               font-size:.9rem;font-weight:600;color:#d1d5db;text-transform:uppercase;position:relative;}
+    .clue-cell.correct{background:#16a34a!important;color:#fff!important;}
+    .clue-arrow{position:absolute;width:12px;height:12px;color:#9ca3af;}
+    .arrow-right{right:4px;} .arrow-down{bottom:4px;}
+    .answer-cell input{direction:rtl;font-family:'Assistant',sans-serif;
+                        width:100%;height:100%;background:transparent;
+                        border:1px solid #4b5563;text-align:center;color:#fff;
+                        font-size:1.5rem;font-weight:700;padding:0;border-radius:4px;}
+    .answer-cell input:focus{outline:none;background:#4f46e5;border-color:#a78bfa;
+                             transform:scale(1.1);z-index:10;}
+    .answer-cell input.correct{border-color:#34d399;background:rgba(16,185,129,0.2);}
+    .answer-cell input.incorrect{border-color:#f87171;background:rgba(239,68,68,0.2);}
   </style>
 </head>
 <body>
-<div id="level-screen" class="screen text-center">
-  <h1 class="text-3xl font-bold gradient-text mb-4">בחר שלב</h1>
-  <div id="levels-list" class="flex flex-wrap justify-center gap-4"></div>
-</div>
 
-<div id="game-screen" class="screen hidden flex-col items-center w-full">
-  <div id="tarchetz-container" class="w-full max-w-2xl">
-    <div class="flex justify-between items-center p-4">
-      <a href="hub.html" class="btn btn-secondary">חזור</a>
-      <h2 class="text-2xl font-bold">תרחץ - <span id="level-name"></span> <span id="step-num"></span></h2>
-      <div id="timer" class="text-2xl font-mono" dir="ltr">00:00</div>
+  <!-- בחירת שלב -->
+  <div id="level-screen" class="screen text-center">
+    <h1 class="text-3xl font-bold gradient-text mb-4">בחר שלב</h1>
+    <div id="levels-list"></div>
+  </div>
+
+  <!-- מסך המשחק -->
+  <div id="game-screen" class="screen hidden flex-col items-center w-full">
+    <div id="tarchetz-container" class="w-full max-w-2xl">
+      <div class="flex justify-between items-center p-4">
+        <a href="hub.html" class="btn btn-secondary">חזור</a>
+        <h2 class="text-2xl font-bold">תרחץ - <span id="step-num"></span></h2>
+        <div id="timer" class="text-2xl font-mono" dir="ltr">00:00</div>
+      </div>
+      <div id="tarchetz-grid"></div>
     </div>
-    <div id="tarchetz-grid"></div>
   </div>
-</div>
 
-<div id="score-screen" class="screen hidden flex-col items-center text-center">
-  <div class="p-8 bg-gray-800 rounded-2xl max-w-lg">
-    <h1 id="score-title" class="text-5xl font-bold mb-4 gradient-text">מעולה!</h1>
-    <p id="final-score" class="text-4xl font-bold my-8"></p>
-    <button id="next-level-btn" class="btn btn-primary">לשלב הבא</button>
+  <!-- מסך סיום -->
+  <div id="score-screen" class="screen hidden flex-col items-center text-center">
+    <div class="p-8 bg-gray-800 rounded-2xl max-w-lg">
+      <h1 id="score-title" class="text-5xl font-bold mb-4 gradient-text">כל הכבוד!</h1>
+      <p id="final-score" class="text-4xl font-bold my-8"></p>
+      <button id="next-level-btn" class="btn btn-primary">הבא</button>
+    </div>
   </div>
-</div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-const firebaseConfig = { /* ...המפתח שלך... */ };
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+    // config מלא שלך
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
+      authDomain: "english-4-you-fb80b.firebaseapp.com",
+      projectId: "english-4-you-fb80b",
+      storageBucket: "english-4-you-fb80b.appspot.com",
+      messagingSenderId: "974140187099",
+      appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-const levelScreen = document.getElementById('level-screen');
-const gameScreen = document.getElementById('game-screen');
-const scoreScreen = document.getElementById('score-screen');
-const levelsList = document.getElementById('levels-list');
-const gridContainer = document.getElementById('tarchetz-grid');
-const levelName = document.getElementById('level-name');
-const stepNum = document.getElementById('step-num');
-const timerEl = document.getElementById('timer');
-const nextBtn = document.getElementById('next-level-btn');
+    const NUM_LEVELS = 10;
+    const BASE_WORDS = 30;
+    const WORDS_PER_LEVEL = 5;
 
-const NUM_LEVELS = 10;
-const BASE_WORDS = 30;
-const WORDS_PER_LEVEL = 5;
-const WORD_BANK_SIZE = 150;
-
-const bigWordBank = {
- easy: [
+    // מאגר פשוט לדוגמה (200 מילים לרמה הקלה)
+    const bigWordBank = {
+      easy: [
   { en: "SUN", he: "שמש" },
   { en: "CAT", he: "חתול" },
   { en: "DOG", he: "כלב" },
@@ -286,193 +290,208 @@ const bigWordBank = {
   { en: "CARROT", he: "גזר" },
   { en: "PEPPER", he: "פלפל" },
   { en: "GARLIC", he: "שום" }
-]
-  medium:  [/* ... */],
-  hard:    [/* ... */]
-};
+]  /* … המשך עם ה־200 מילים שלך כאן … */
+      ],
+      medium: [ /* תוכל למלא מאוחר יותר */ ],
+      hard:   [ /* תוכל למלא מאוחר יותר */ ],
+    };
 
-const state = { level: 'easy', user: null, progress: {}, step: 1, puzzle: null, startTime: null, timerInterval: null };
+    const state = {
+      user: null,
+      level: "easy",
+      progress: { easy:1, medium:1, hard:1 },
+      step: 1,
+      puzzle: null,
+      startTime: null,
+      timerInterval: null
+    };
 
-onAuthStateChanged(auth, async user => {
-  if (user) {
-    state.user = user;
-    const snap = await getDoc(doc(db, 'users', user.uid));
-    state.level = snap.data().level || 'easy';
-    state.progress = snap.data().tarchetzProgress || { easy: 1, medium: 1, hard: 1 };
-    renderLevels();
-  } else {
-    state.user = null;
-    state.level = 'easy';
-    state.progress = { easy: 1, medium: 1, hard: 1 };
-    renderLevels();
-  }
-});
+    const levelScreen   = document.getElementById("level-screen");
+    const levelsList    = document.getElementById("levels-list");
+    const gameScreen    = document.getElementById("game-screen");
+    const scoreScreen   = document.getElementById("score-screen");
+    const gridContainer = document.getElementById("tarchetz-grid");
+    const stepNum       = document.getElementById("step-num");
+    const timerEl       = document.getElementById("timer");
+    const nextLevelBtn  = document.getElementById("next-level-btn");
+    const finalScoreEl  = document.getElementById("final-score");
 
-function renderLevels() {
-  levelsList.innerHTML = '';
-  for (let i = 1; i <= NUM_LEVELS; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-primary';
-    btn.textContent = `שלב ${i}`;
-    if (i > state.progress[state.level]) btn.classList.add('level-lock');
-    btn.disabled = i > state.progress[state.level];
-    btn.addEventListener('click', () => startLevel(i));
-    levelsList.appendChild(btn);
-  }
-  levelScreen.classList.remove('hidden');
-  gameScreen.classList.add('hidden');
-  scoreScreen.classList.add('hidden');
-}
-
-function startLevel(step) {
-  state.step = step;
-  levelName.textContent = { easy: 'קל', medium: 'בינוני', hard: 'קשה' }[state.level];
-  stepNum.textContent = `שלב ${step}`;
-  // בוחר מילים אקראיות לשלבים ללא חזרות
-  const used = [];
-  const arr = [];
-  while (arr.length < BASE_WORDS + (step-1)*WORDS_PER_LEVEL) {
-    const idx = Math.floor(Math.random() * bigWordBank[state.level].length);
-    if (!used.includes(idx)) {
-      arr.push(bigWordBank[state.level][idx]);
-      used.push(idx);
-    }
-  }
-  state.puzzle = generatePuzzle(arr);
-  renderPuzzle(state.puzzle);
-  state.startTime = Date.now();
-  clearInterval(state.timerInterval);
-  state.timerInterval = setInterval(updateTimer, 1000);
-  levelScreen.classList.add('hidden');
-  scoreScreen.classList.add('hidden');
-  gameScreen.classList.remove('hidden');
-}
-
-function updateTimer() {
-  const sec = Math.floor((Date.now()-state.startTime)/1000);
-  timerEl.textContent = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
-}
-
-function generatePuzzle(words) {
-  const size = Math.min(12, Math.ceil(Math.sqrt(words.length * 3)));
-  const grid = Array(size).fill(0).map(()=>Array(size).fill(null));
-  const puzzleWords = [];
-  let placed = 0;
-  for (const w of words) {
-    if (placed >= words.length) break;
-    const len = w.he.length + 1;
-    const dir = Math.random() > 0.5 ? 'across' : 'down';
-    for (let i = 0; i < 30; i++) {
-      const r = Math.floor(Math.random() * (dir==='across'?size:size-len));
-      const c = Math.floor(Math.random() * (dir==='down'?size:size-len));
-      if (canPlace(r,c,len,dir,grid)) {
-        for(let j=0;j<len;j++) {
-          const rr = dir==='across'?r:r+j, cc=dir==='down'?c:c+j;
-          grid[rr][cc]=true;
-        }
-        puzzleWords.push({ ...w, r, c, dir });
-        placed++;
-        break;
-      }
-    }
-  }
-  return { grid, words: puzzleWords, size };
-}
-function canPlace(r, c, len, dir, grid) {
-  for (let i = 0; i < len; i++) {
-    const rr = dir==='across'?r:r+i, cc=dir==='down'?c:c+i;
-    if (grid[rr][cc]) return false;
-  }
-  return true;
-}
-
-function renderPuzzle({grid, words, size}) {
-  gridContainer.innerHTML = '';
-  gridContainer.style.gridTemplateColumns = `repeat(${size},1fr)`;
-  const cells = Array(size).fill(0).map(()=>Array(size).fill(null));
-  words.forEach((w, idx) => {
-    const clue = document.createElement('div');
-    clue.className = 'grid-cell clue-cell';
-    clue.textContent = w.en;
-    clue.dataset.idx = idx;
-    clue.innerHTML += `<svg class="clue-arrow ${w.dir==='across'?'arrow-right':'arrow-down'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${w.dir==='across'?'M17 8l4 4m0 0l-4 4m4-4H3':'M16 17l-4 4m0 0l-4-4m4 4V3'}"/></svg>`;
-    cells[w.r][w.c] = clue;
-    for (let j = 0; j < w.he.length; j++) {
-      const rr = w.dir==='across'?w.r:w.r+j+1;
-      const cc = w.dir==='down'?w.c:w.c+j+1;
-      const ac = document.createElement('div');
-      ac.className = 'grid-cell answer-cell';
-      const inp = document.createElement('input');
-      inp.type = 'text'; inp.maxLength = 1;
-      inp.dataset.idx = idx; inp.dataset.let = j;
-      inp.dataset.correct = w.he[j];
-      ac.appendChild(inp);
-      cells[rr][cc] = ac;
-    }
-  });
-  for (let r=0;r<size;r++) for (let c=0;c<size;c++) gridContainer.appendChild(cells[r][c]||Object.assign(document.createElement('div'),{className:'grid-cell empty'}));
-  addInputListeners();
-}
-
-function addInputListeners() {
-  const inputs = gridContainer.querySelectorAll('input');
-  inputs.forEach(inp => {
-    inp.addEventListener('input', () => {
-      const idx = +inp.dataset.idx, letIdx = +inp.dataset.let;
-      const w = state.puzzle.words[idx];
-      if (letIdx < w.he.length-1) {
-        const next = gridContainer.querySelector(`input[data-idx="${idx}"][data-let="${letIdx+1}"]`);
-        if (next) next.focus();
-      }
-      const group = Array.from(gridContainer.querySelectorAll(`input[data-idx="${idx}"]`)).sort((a,b)=>a.dataset.let-b.dataset.let);
-      if (group.every(i=>i.value)) evaluateWord(idx);
-      // האם סיימתי את כל המילים?
-      const allDone = Array.from(gridContainer.querySelectorAll('input')).every(i=>i.disabled);
-      if (allDone) finishLevel();
-    });
-    inp.addEventListener('keydown', e => {
-      if (e.key==='Backspace' && !inp.value) {
-        const idx = +inp.dataset.idx, letIdx = +inp.dataset.let;
-        if (letIdx > 0) {
-          const prev = gridContainer.querySelector(`input[data-idx="${idx}"][data-let="${letIdx-1}"]`);
-          if (prev) prev.focus();
+    onAuthStateChanged(auth, async user => {
+      state.user = user;
+      if (user) {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) {
+          state.level = snap.data().level;
+          state.progress = snap.data().tarchetzProgress || state.progress;
         }
       }
+      renderLevels();
     });
-  });
-}
 
-function evaluateWord(idx) {
-  const w = state.puzzle.words[idx];
-  const group = Array.from(gridContainer.querySelectorAll(`input[data-idx="${idx}"]`)).sort((a,b)=>a.dataset.let-b.dataset.let);
-  const ans = group.map(i=>i.value).join('');
-  if (ans.toLowerCase() === w.he.toLowerCase()) {
-    group.forEach(i=>{i.classList.add('correct');i.disabled=true;});
-    const clue = gridContainer.querySelector(`.clue-cell[data-idx="${idx}"]`);
-    if (clue) clue.classList.add('correct');
-  }
-}
+    function renderLevels() {
+      levelsList.innerHTML = "";
+      for (let i=1; i<=NUM_LEVELS; i++) {
+        const btn = document.createElement("button");
+        btn.className = "btn btn-primary";
+        btn.textContent = `שלב ${i}`;
+        if (i > state.progress[state.level]) {
+          btn.disabled = true;
+          btn.classList.add("btn-secondary");
+        }
+        btn.addEventListener("click", ()=>startLevel(i));
+        levelsList.appendChild(btn);
+      }
+      levelScreen.classList.remove("hidden");
+      gameScreen.classList.add("hidden");
+      scoreScreen.classList.add("hidden");
+    }
 
-function finishLevel() {
-  clearInterval(state.timerInterval);
-  document.getElementById('score-title').textContent = "מעולה!";
-  document.getElementById('final-score').innerHTML = `סיימת את שלב ${state.step}!`;
-  nextBtn.disabled = state.step >= NUM_LEVELS;
-  gameScreen.classList.add('hidden');
-  scoreScreen.classList.remove('hidden');
-  // שמירה אוטומטית: פותח את השלב הבא לרמה הזאת
-  if(state.user && state.progress[state.level] === state.step && state.step < NUM_LEVELS) {
-    state.progress[state.level] = state.step+1;
-    updateDoc(doc(db,'users',state.user.uid),{
-      tarchetzProgress: state.progress
+    function startLevel(step) {
+      state.step = step;
+      stepNum.textContent = `שלב ${step}`;
+      // בחר מילים אקראיות
+      const count = BASE_WORDS + (step-1)*WORDS_PER_LEVEL;
+      const pool = [...bigWordBank[state.level]];
+      const arr = [];
+      for (let i=0; i<count; i++){
+        const idx = Math.floor(Math.random()*pool.length);
+        arr.push(pool.splice(idx,1)[0]);
+      }
+      state.puzzle = generatePuzzle(arr);
+      renderPuzzle(state.puzzle);
+      state.startTime = Date.now();
+      clearInterval(state.timerInterval);
+      state.timerInterval = setInterval(updateTimer,1000);
+      levelScreen.classList.add("hidden");
+      scoreScreen.classList.add("hidden");
+      gameScreen.classList.remove("hidden");
+    }
+
+    function updateTimer() {
+      const sec = Math.floor((Date.now()-state.startTime)/1000);
+      timerEl.textContent = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+    }
+
+    function generatePuzzle(words) {
+      const size = Math.min(12, Math.ceil(Math.sqrt(words.length*3)));
+      const grid = Array(size).fill(0).map(()=>Array(size).fill(null));
+      const puzzleWords = [];
+      for (const w of words) {
+        const len = w.he.length+1;
+        const dir = Math.random()>0.5?"across":"down";
+        for (let i=0;i<30;i++){
+          const r = Math.floor(Math.random()*(dir==="across"?size:size-len));
+          const c = Math.floor(Math.random()*(dir==="down"?size:size-len));
+          if (canPlace(r,c,len,dir,grid)) {
+            for (let j=0;j<len;j++){
+              const rr = dir==="across"?r:r+j, cc=dir==="down"?c:c+j;
+              grid[rr][cc]=true;
+            }
+            puzzleWords.push({...w,r,c,dir});
+            break;
+          }
+        }
+      }
+      return {grid,words:puzzleWords,size};
+    }
+
+    function canPlace(r,c,len,dir,grid) {
+      for (let i=0;i<len;i++){
+        const rr = dir==="across"?r:r+i, cc=dir==="down"?c:c+i;
+        if (grid[rr][cc]) return false;
+      }
+      return true;
+    }
+
+    function renderPuzzle({grid,words,size}) {
+      gridContainer.innerHTML = "";
+      gridContainer.style.gridTemplateColumns = `repeat(${size},1fr)`;
+      const cells = Array(size).fill(0).map(()=>Array(size).fill(null));
+      words.forEach((w,idx)=>{
+        const clue = document.createElement("div");
+        clue.className="grid-cell clue-cell";
+        clue.textContent=w.en;
+        clue.dataset.idx=idx;
+        clue.innerHTML+=`<svg class="clue-arrow ${w.dir==='across'?'arrow-right':'arrow-down'}"
+          fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="${w.dir==='across'?'M17 8l4 4m0 0l-4 4m4-4H3':'M16 17l-4 4m0 0l-4-4m4 4V3'}"/>
+          </svg>`;
+        cells[w.r][w.c]=clue;
+        for (let j=0;j<w.he.length;j++){
+          const rr = w.dir==="across"?w.r:w.r+j+1;
+          const cc = w.dir==="down"?w.c:w.c+j+1;
+          const ac = document.createElement("div");
+          ac.className="grid-cell answer-cell";
+          const inp=document.createElement("input");
+          inp.type="text"; inp.maxLength=1;
+          inp.dataset.idx=idx; inp.dataset.let=j;
+          inp.dataset.correct=w.he[j];
+          ac.appendChild(inp);
+          cells[rr][cc]=ac;
+        }
+      });
+      for (let r=0;r<size;r++) for (let c=0;c<size;c++)
+        gridContainer.appendChild(cells[r][c]||Object.assign(document.createElement("div"),{className:"grid-cell empty"}));
+      addInputListeners();
+    }
+
+    function addInputListeners() {
+      gridContainer.querySelectorAll("input").forEach(inp=>{
+        inp.addEventListener("input",()=>{
+          const idx=+inp.dataset.idx, letIdx=+inp.dataset.let;
+          const w=state.puzzle.words[idx];
+          if (letIdx<w.he.length-1) {
+            const nxt=gridContainer.querySelector(`input[data-idx="${idx}"][data-let="${letIdx+1}"]`);
+            if(nxt) nxt.focus();
+          }
+          const grp=Array.from(gridContainer.querySelectorAll(`input[data-idx="${idx}"]`))
+                         .sort((a,b)=>a.dataset.let-b.dataset.let);
+          if(grp.every(i=>i.value)) evaluateWord(idx);
+          // כולם סיימו?
+          if(Array.from(gridContainer.querySelectorAll("input"))
+                   .every(x=>x.disabled)) finishLevel();
+        });
+        inp.addEventListener("keydown",e=>{
+          if(e.key==="Backspace"&& !inp.value){
+            const idx=+inp.dataset.idx, li=+inp.dataset.let;
+            if(li>0) {
+              const prev=gridContainer.querySelector(`input[data-idx="${idx}"][data-let="${li-1}"]`);
+              if(prev) prev.focus();
+            }
+          }
+        });
+      });
+    }
+
+    function evaluateWord(idx) {
+      const w=state.puzzle.words[idx];
+      const grp=Array.from(gridContainer.querySelectorAll(`input[data-idx="${idx}"]`))
+                     .sort((a,b)=>a.dataset.let-b.dataset.let);
+      const ans=grp.map(i=>i.value).join("");
+      if(ans.toLowerCase()===w.he.toLowerCase()){
+        grp.forEach(i=>{i.classList.add("correct");i.disabled=true;});
+        const clue=gridContainer.querySelector(`.clue-cell[data-idx="${idx}"]`);
+        if(clue) clue.classList.add("correct");
+      }
+    }
+
+    function finishLevel() {
+      clearInterval(state.timerInterval);
+      finalScoreEl.textContent = `סיימת שלב ${state.step}!`;
+      scoreScreen.classList.remove("hidden");
+      gameScreen.classList.add("hidden");
+      // שמירה ופתיחת הבא
+      if(state.user && state.progress[state.level]===state.step && state.step<NUM_LEVELS){
+        state.progress[state.level]=state.step+1;
+        updateDoc(doc(db,"users",state.user.uid),{ tarchetzProgress:state.progress });
+      }
+    }
+
+    nextLevelBtn.addEventListener("click",()=>{
+      if(state.step<NUM_LEVELS) startLevel(state.step+1);
+      else renderLevels();
     });
-  }
-}
-
-nextBtn.addEventListener('click',()=>{
-  if(state.step<NUM_LEVELS) startLevel(state.step+1);
-  else renderLevels();
-});
-</script>
+  </script>
 </body>
 </html>
