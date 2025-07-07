@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אמריקאי סטייל</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Assistant', sans-serif; background-color: #111827; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 700px; margin: auto; padding: 1rem; text-align: center; }
+        .hidden { display: none !important; }
+
+        .back-button {
+            position: fixed; top: 20px; right: 20px;
+            background-color: rgba(31, 41, 55, 0.8); backdrop-filter: blur(5px);
+            color: white; padding: 0.5rem 1rem; border-radius: 0.5rem;
+            text-decoration: none; font-weight: 600; transition: background-color .2s; z-index: 100;
+        }
+        .back-button:hover { background-color: #374151; }
+
+        #question-word {
+            font-size: 3rem; font-weight: 800; margin-bottom: 3rem;
+            background-image: linear-gradient(to right, #60a5fa, #c084fc);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            dir: ltr;
+        }
+        
+        .option-btn {
+            background-color: #1f2937; border: 2px solid #374151; width: 100%;
+            padding: 1.25rem; font-size: 1.25rem; transition: all .2s ease; border-radius: 1rem;
+        }
+        .option-btn:not(:disabled):hover { background-color: #4f46e5; border-color: #818cf8; }
+        .option-btn:disabled { cursor: not-allowed; }
+
+        .option-btn.correct { background-color: #16a34a !important; border-color: #4ade80 !important; }
+        .option-btn.incorrect { background-color: #dc2626 !important; border-color: #f87171 !important; }
+    </style>
+</head>
+<body>
+
+    <a href="psico.html" class="back-button">→ חזור</a>
+
+    <div class="container">
+        <div id="loading-screen">
+            <h1 class="text-3xl font-bold">טוען משחק...</h1>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <p id="progress-text" class="text-lg text-gray-400 mb-4"></p>
+            <h2 id="question-word" class="mb-12">Question</h2>
+            <div id="options-container" class="grid grid-cols-2 gap-4">
+                </div>
+            <p id="feedback-text" class="h-8 mt-6 text-2xl font-bold"></p>
+        </div>
+        
+        <div id="finished-screen" class="hidden">
+            <h2 class="text-4xl font-bold text-green-400">כל הכבוד!</h2>
+            <p class="text-xl mt-2">סיימת לתרגל את כל המילים שהיית צריך בקטגוריה זו.</p>
+            <a href="psico.html" class="inline-block mt-8 bg-indigo-600 text-white py-3 px-6 rounded-lg text-lg hover:bg-indigo-700">חזרה לדף המאגרים</a>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { wordBanks } from './word-banks.js';
+
+    // --- Config and Initialization ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
+        authDomain: "english-4-you-fb80b.firebaseapp.com",
+        projectId: "english-4-you-fb80b",
+        storageBucket: "english-4-you-fb80b.appspot.com",
+        messagingSenderId: "974140187099",
+        appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- Global State ---
+    let currentUser;
+    let currentBankId;
+    let questionPool = [];
+    let currentQuestionIndex = 0;
+    const allWordsEver = Object.values(wordBanks).flat(); // Pool for incorrect answers
+
+    // --- UI Elements ---
+    const loadingScreen = document.getElementById('loading-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const finishedScreen = document.getElementById('finished-screen');
+    const questionWordEl = document.getElementById('question-word');
+    const optionsContainer = document.getElementById('options-container');
+    const feedbackText = document.getElementById('feedback-text');
+    const progressText = document.getElementById('progress-text');
+    
+    // --- Main Logic ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentBankId = urlParams.get('bank');
+        if (!currentBankId) { document.body.innerHTML = '<h1>שגיאה: לא נבחר מאגר מילים.</h1>'; return; }
+
+        onAuthStateChanged(auth, user => {
+            if (user) { currentUser = user; initializeGame(); } 
+            else { window.location.href = 'login.html'; }
+        });
+    });
+
+    async function initializeGame() {
+        const wordsInBank = wordBanks[currentBankId] || [];
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+        const docSnap = await getDoc(progressDocRef);
+        const knownWords = docSnap.exists() ? docSnap.data().knownWords || [] : [];
+        
+        // Questions are words from the current bank that are NOT known
+        questionPool = wordsInBank.filter(word => !knownWords.includes(word.en));
+        
+        if (questionPool.length === 0) {
+            loadingScreen.classList.add('hidden');
+            finishedScreen.classList.remove('hidden');
+            finishedScreen.querySelector('p').textContent = 'נראה שכבר עברת על כל המילים במאגר זה. כל הכבוד!';
+            return;
+        }
+        
+        questionPool.sort(() => Math.random() - 0.5); // Shuffle questions
+        loadingScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+        displayNextQuestion();
+    }
+
+    function displayNextQuestion() {
+        if (currentQuestionIndex >= questionPool.length) {
+            gameScreen.classList.add('hidden');
+            finishedScreen.classList.remove('hidden');
+            return;
+        }
+
+        const currentQuestion = questionPool[currentQuestionIndex];
+        questionWordEl.textContent = currentQuestion.en;
+        feedbackText.textContent = '';
+        progressText.textContent = `שאלה ${currentQuestionIndex + 1} מתוך ${questionPool.length}`;
+
+        // --- Generate Options ---
+        const options = [{ text: currentQuestion.he, correct: true }];
+        
+        // Get 3 incorrect answers from all words available
+        while (options.length < 4) {
+            const randomWord = allWordsEver[Math.floor(Math.random() * allWordsEver.length)];
+            // Ensure the distractor isn't the correct answer or a duplicate
+            if (randomWord.he !== currentQuestion.he && !options.some(opt => opt.text === randomWord.he)) {
+                options.push({ text: randomWord.he, correct: false });
+            }
+        }
+        
+        options.sort(() => Math.random() - 0.5); // Shuffle the final options
+
+        // --- Render Options ---
+        optionsContainer.innerHTML = '';
+        options.forEach(option => {
+            const button = document.createElement('button');
+            button.className = 'option-btn';
+            button.textContent = option.text;
+            button.onclick = (event) => handleAnswer(option.correct, event.target);
+            optionsContainer.appendChild(button);
+        });
+    }
+
+    async function handleAnswer(isCorrect, buttonEl) {
+        // Disable all buttons
+        optionsContainer.querySelectorAll('button').forEach(btn => btn.disabled = true);
+        
+        const currentQuestion = questionPool[currentQuestionIndex];
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+        
+        if (isCorrect) {
+            buttonEl.classList.add('correct');
+            feedbackText.textContent = 'נכון!';
+            feedbackText.style.color = '#4ade80';
+            // Mark as known
+            await setDoc(progressDocRef, {
+                knownWords: arrayUnion(currentQuestion.en),
+                unknownWords: arrayRemove(currentQuestion.en)
+            }, { merge: true });
+        } else {
+            buttonEl.classList.add('incorrect');
+            feedbackText.textContent = `טעות... התשובה הנכונה היא:`;
+            feedbackText.style.color = '#f87171';
+            // Highlight the correct answer
+            optionsContainer.querySelectorAll('button').forEach(btn => {
+                if (btn.textContent === currentQuestion.he) {
+                    btn.classList.add('correct');
+                }
+            });
+            // Mark as unknown
+            await setDoc(progressDocRef, {
+                unknownWords: arrayUnion(currentQuestion.en)
+            }, { merge: true });
+        }
+
+        setTimeout(() => {
+            currentQuestionIndex++;
+            displayNextQuestion();
+        }, 2000);
+    }
+</script>
+</body>
+</html>
