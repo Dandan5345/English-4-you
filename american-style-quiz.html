@@ -35,6 +35,23 @@
 
         .option-btn.correct { background-color: #16a34a !important; border-color: #4ade80 !important; }
         .option-btn.incorrect { background-color: #dc2626 !important; border-color: #f87171 !important; }
+        
+        /* === START: NEW MODAL STYLES === */
+        #confirmation-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center; z-index: 200;
+        }
+        #confirmation-modal {
+            background-color: #1f2937; padding: 2rem; border-radius: 1.5rem;
+            border: 1px solid #374151; max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,.2),0 8px 10px -6px rgba(0,0,0,.2);
+        }
+        .modal-btn {
+            padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600;
+            border: none; cursor: pointer; transition: background-color .2s;
+        }
+        /* === END: NEW MODAL STYLES === */
     </style>
 </head>
 <body>
@@ -49,8 +66,7 @@
         <div id="game-screen" class="hidden">
             <p id="progress-text" class="text-lg text-gray-400 mb-4"></p>
             <h2 id="question-word" class="mb-12">Question</h2>
-            <div id="options-container" class="grid grid-cols-2 gap-4">
-                </div>
+            <div id="options-container" class="grid grid-cols-2 gap-4"></div>
             <p id="feedback-text" class="h-8 mt-6 text-2xl font-bold"></p>
         </div>
         
@@ -60,11 +76,20 @@
             <a href="psico.html" class="inline-block mt-8 bg-indigo-600 text-white py-3 px-6 rounded-lg text-lg hover:bg-indigo-700">חזרה לדף המאגרים</a>
         </div>
     </div>
-
-<script type="module">
+    
+    <div id="confirmation-modal-overlay" class="hidden">
+        <div id="confirmation-modal">
+            <p id="modal-text" class="text-lg mb-6">טקסט ברירת מחדל</p>
+            <div class="flex justify-between gap-4">
+                <button id="modal-no-btn" class="modal-btn bg-red-600 hover:bg-red-700 text-white w-full">לא, להשאיר</button>
+                <button id="modal-yes-btn" class="modal-btn bg-green-600 hover:bg-green-700 text-white w-full">כן, הבנתי</button>
+            </div>
+        </div>
+    </div>
+    <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
     import { wordBanks } from './word-banks.js';
 
     // --- Config and Initialization ---
@@ -85,7 +110,7 @@
     let currentBankId;
     let questionPool = [];
     let currentQuestionIndex = 0;
-    const allWordsEver = Object.values(wordBanks).flat(); // Pool for incorrect answers
+    const allWordsEver = Object.values(wordBanks).flat();
 
     // --- UI Elements ---
     const loadingScreen = document.getElementById('loading-screen');
@@ -95,6 +120,10 @@
     const optionsContainer = document.getElementById('options-container');
     const feedbackText = document.getElementById('feedback-text');
     const progressText = document.getElementById('progress-text');
+    const modalOverlay = document.getElementById('confirmation-modal-overlay');
+    const modalText = document.getElementById('modal-text');
+    const modalYesBtn = document.getElementById('modal-yes-btn');
+    const modalNoBtn = document.getElementById('modal-no-btn');
     
     // --- Main Logic ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -114,7 +143,6 @@
         const docSnap = await getDoc(progressDocRef);
         const knownWords = docSnap.exists() ? docSnap.data().knownWords || [] : [];
         
-        // Questions are words from the current bank that are NOT known
         questionPool = wordsInBank.filter(word => !knownWords.includes(word.en));
         
         if (questionPool.length === 0) {
@@ -124,7 +152,7 @@
             return;
         }
         
-        questionPool.sort(() => Math.random() - 0.5); // Shuffle questions
+        questionPool.sort(() => Math.random() - 0.5);
         loadingScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
         displayNextQuestion();
@@ -142,21 +170,16 @@
         feedbackText.textContent = '';
         progressText.textContent = `שאלה ${currentQuestionIndex + 1} מתוך ${questionPool.length}`;
 
-        // --- Generate Options ---
         const options = [{ text: currentQuestion.he, correct: true }];
-        
-        // Get 3 incorrect answers from all words available
         while (options.length < 4) {
             const randomWord = allWordsEver[Math.floor(Math.random() * allWordsEver.length)];
-            // Ensure the distractor isn't the correct answer or a duplicate
             if (randomWord.he !== currentQuestion.he && !options.some(opt => opt.text === randomWord.he)) {
                 options.push({ text: randomWord.he, correct: false });
             }
         }
         
-        options.sort(() => Math.random() - 0.5); // Shuffle the final options
+        options.sort(() => Math.random() - 0.5);
 
-        // --- Render Options ---
         optionsContainer.innerHTML = '';
         options.forEach(option => {
             const button = document.createElement('button');
@@ -168,41 +191,74 @@
     }
 
     async function handleAnswer(isCorrect, buttonEl) {
-        // Disable all buttons
         optionsContainer.querySelectorAll('button').forEach(btn => btn.disabled = true);
         
         const currentQuestion = questionPool[currentQuestionIndex];
         const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
-        
+
         if (isCorrect) {
             buttonEl.classList.add('correct');
             feedbackText.textContent = 'נכון!';
             feedbackText.style.color = '#4ade80';
-            // Mark as known
-            await setDoc(progressDocRef, {
-                knownWords: arrayUnion(currentQuestion.en),
-                unknownWords: arrayRemove(currentQuestion.en)
-            }, { merge: true });
+
+            const docSnap = await getDoc(progressDocRef);
+            const tracker = docSnap.exists() ? docSnap.data().correctnessTracker || {} : {};
+            const currentCount = (tracker[currentQuestion.en] || 0) + 1;
+
+            if (currentCount >= 3) {
+                showConfirmationModal(currentQuestion, progressDocRef);
+            } else {
+                tracker[currentQuestion.en] = currentCount;
+                await setDoc(progressDocRef, { correctnessTracker: tracker }, { merge: true });
+                setTimeout(goToNextQuestion, 1500);
+            }
         } else {
             buttonEl.classList.add('incorrect');
-            feedbackText.textContent = `טעות... התשובה הנכונה היא:`;
+            feedbackText.textContent = `טעות...`;
             feedbackText.style.color = '#f87171';
-            // Highlight the correct answer
             optionsContainer.querySelectorAll('button').forEach(btn => {
-                if (btn.textContent === currentQuestion.he) {
-                    btn.classList.add('correct');
-                }
+                if (btn.textContent === currentQuestion.he) btn.classList.add('correct');
             });
-            // Mark as unknown
-            await setDoc(progressDocRef, {
-                unknownWords: arrayUnion(currentQuestion.en)
+            
+            // Reset the counter on incorrect answer
+            await setDoc(progressDocRef, { 
+                unknownWords: arrayUnion(currentQuestion.en),
+                correctnessTracker: { [currentQuestion.en]: 0 }
             }, { merge: true });
+            setTimeout(goToNextQuestion, 2000);
         }
+    }
+    
+    function showConfirmationModal(question, progressDocRef) {
+        modalText.innerHTML = `ענית 3 פעמים נכון על המילה <strong class="text-blue-400">${question.en}</strong>. <br>האם להעביר אותה למילים שאתה יודע?`;
+        modalOverlay.classList.remove('hidden');
 
-        setTimeout(() => {
-            currentQuestionIndex++;
-            displayNextQuestion();
-        }, 2000);
+        modalYesBtn.onclick = async () => {
+            await setDoc(progressDocRef, {
+                knownWords: arrayUnion(question.en),
+                unknownWords: arrayRemove(question.en),
+                correctnessTracker: { [question.en]: deleteField() } // Remove the key from tracker
+            }, { merge: true });
+            hideConfirmationModal();
+            goToNextQuestion();
+        };
+
+        modalNoBtn.onclick = async () => {
+            await setDoc(progressDocRef, {
+                correctnessTracker: { [question.en]: 0 } // Reset counter to 0
+            }, { merge: true });
+            hideConfirmationModal();
+            goToNextQuestion();
+        };
+    }
+
+    function hideConfirmationModal() {
+        modalOverlay.classList.add('hidden');
+    }
+
+    function goToNextQuestion() {
+        currentQuestionIndex++;
+        displayNextQuestion();
     }
 </script>
 </body>
