@@ -45,8 +45,22 @@
         <div id="loading-screen"><h1 class="text-3xl font-bold">טוען...</h1></div>
         
         <div id="instructions-screen" class="hidden">
+            <div class="instructions-box">
+                <h1 class="text-4xl font-bold gradient-text mb-4">אמריקאי בשמיעה</h1>
+                <h2>איך המשחק עובד?</h2>
+                <p>
+                    במשחק זה תתרגלו את יכולת הבנת הנשמע שלכם. לחצו על אייקון הרמקול 🎧 כדי לשמוע מילה באנגלית. לאחר מכן, בחרו את **התרגום הנכון בעברית** מבין ארבע האפשרויות שיוצגו.
+                </p>
+                <p>
+                    ליד הרמקול תמצאו כפתור לשליטה על **מהירות ההקראה** (לדוגמה: 1x). לחיצה עליו תשנה את מהירות השמע, ותאפשר לכם להתאמן בקצב שנוח לכם.
+                </p>
+                <p>
+                    לאחר תשובה נכונה, יופיע חלון שיציג את המילה והתרגום שלה.
+                    <br><strong>שימו לב:</strong> משחק זה נועד לתרגול בלבד ואינו מעדכן את מאגר המילים ה"ידועות" שלכם.
+                </p>
+                <button id="start-game-btn">התחל משחק</button>
             </div>
-
+        </div>
         <div id="game-screen" class="hidden">
             <div id="speaker-control-area">
                 <div id="play-sound-btn">🎧</div>
@@ -58,7 +72,10 @@
         </div>
         
         <div id="finished-screen" class="hidden">
-            </div>
+            <h2 class="text-4xl font-bold text-green-400">סיימת את כל המילים!</h2>
+            <p class="text-xl mt-2">כל הכבוד! תרגלת את כל המילים שהיית צריך במאגר זה.</p>
+            <button onclick="window.location.reload()" class="mt-8 modal-btn bg-blue-600 hover:bg-blue-700 text-white">שחק שוב</button>
+        </div>
 
         <div id="correct-answer-modal" class="modal-overlay hidden">
             <div class="modal-content">
@@ -119,9 +136,6 @@
     
     // --- Main Logic ---
     document.addEventListener('DOMContentLoaded', () => {
-        // ... (DOMContentLoaded logic remains the same)
-        // This is to avoid making the code block too long, as this part has no changes.
-        // I will paste the full script at the end for clarity.
         const urlParams = new URLSearchParams(window.location.search);
         currentBankId = urlParams.get('bank');
         if (!currentBankId) { document.body.innerHTML = '<h1>שגיאה: לא נבחר מאגר מילים.</h1>'; return; }
@@ -132,7 +146,6 @@
     });
 
     async function initializeGame() {
-        // ... (initializeGame logic remains the same)
         const wordsInBank = wordBanks[currentBankId] || [];
         const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
         const docSnap = await getDoc(progressDocRef);
@@ -186,6 +199,8 @@
     }
     
     function speakWord(word, rate = playbackRates[currentRateIndex]) {
+        // Stop any previous speech before starting a new one
+        speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.lang = 'en-US';
         utterance.rate = rate;
@@ -213,7 +228,6 @@
                 if (btn.textContent === currentQuestion.he) btn.classList.add('correct');
             });
 
-            // Show 'Next' button for manual progression
             incorrectNextBtn.classList.remove('hidden');
             incorrectNextBtn.onclick = displayNextQuestion;
         }
@@ -246,7 +260,7 @@
 
     function hideModalAndProceed() {
         clearTimeout(modalTimeout);
-        clearInterval(modalInterval);
+        clearInterval(modalInterval); // Must clear interval as well
         correctAnswerModal.classList.add('hidden');
         displayNextQuestion();
     }
