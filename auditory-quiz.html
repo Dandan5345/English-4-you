@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אמריקאי בשמיעה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Assistant', sans-serif; background-color: #111827; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 700px; margin: auto; padding: 1rem; text-align: center; }
+        .hidden { display: none !important; }
+
+        .back-button { position: fixed; top: 20px; right: 20px; background-color: rgba(31, 41, 55, 0.8); backdrop-filter: blur(5px); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; transition: background-color .2s; z-index: 100; }
+        .back-button:hover { background-color: #374151; }
+
+        /* Instructions Screen */
+        .instructions-box { background-color: rgba(31, 41, 55, 0.5); border: 1px solid #374151; border-radius: 1.5rem; padding: 2rem; }
+        .instructions-box h2 { font-size: 2rem; font-weight: 700; color: #c084fc; }
+        .instructions-box p { font-size: 1.1rem; color: #d1d5db; line-height: 1.8; margin-top: 1rem; }
+        #start-game-btn { background-color: #4f46e5; color: white; padding: 0.75rem 2rem; font-size: 1.25rem; font-weight: 700; border-radius: 0.75rem; cursor: pointer; transition: background-color .2s; margin-top: 2rem; }
+        #start-game-btn:hover { background-color: #6366f1; }
+
+        /* Game Screen */
+        #speaker-control-area { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 3rem; }
+        #play-sound-btn { font-size: 5rem; cursor: pointer; transition: transform .2s; }
+        #play-sound-btn:hover { transform: scale(1.1); }
+        #speed-control { background-color: #374151; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; user-select: none; }
+        .option-btn { background-color: #1f2937; border: 2px solid #374151; width: 100%; padding: 1.25rem; font-size: 1.25rem; transition: all .2s ease; border-radius: 1rem; dir: ltr; }
+        .option-btn:not(:disabled):hover { background-color: #4f46e5; border-color: #818cf8; }
+        .option-btn.correct { background-color: #16a34a !important; border-color: #4ade80 !important; }
+        .option-btn.incorrect { background-color: #dc2626 !important; border-color: #f87171 !important; }
+        
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 200; }
+        .modal-content { background-color: #1f2937; padding: 2rem; border-radius: 1.5rem; border: 1px solid #374151; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,.2),0 8px 10px -6px rgba(0,0,0,.2); }
+        .modal-word-en { font-size: 2.5rem; font-weight: 800; dir: ltr; cursor: pointer; }
+        .modal-word-he { font-size: 1.5rem; color: #9ca3af; margin-bottom: 1.5rem; }
+        .modal-btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; border: none; cursor: pointer; transition: background-color .2s; }
+    </style>
+</head>
+<body>
+    <a href="psico.html" class="back-button">→ חזור</a>
+    <div class="container">
+        <div id="loading-screen"><h1 class="text-3xl font-bold">טוען...</h1></div>
+        
+        <div id="instructions-screen" class="hidden">
+            <div class="instructions-box">
+                <h1 class="text-4xl font-bold gradient-text mb-4">אמריקאי בשמיעה</h1>
+                <h2>איך המשחק עובד?</h2>
+                <p>
+                    במשחק זה תתרגלו את יכולת הבנת הנשמע שלכם. לחצו על אייקון הרמקול 🎧 כדי לשמוע מילה באנגלית. לאחר מכן, בחרו את המילה הנכונה מבין ארבע האפשרויות שיוצגו.
+                </p>
+                <p>
+                    ליד הרמקול תמצאו כפתור לשליטה על **מהירות ההקראה** (לדוגמה: 1x). לחיצה עליו תשנה את מהירות השמע, ותאפשר לכם להתאמן בקצב שנוח לכם.
+                </p>
+                <p>
+                    לאחר תשובה נכונה, יופיע חלון שיציג את המילה והתרגום שלה, וייסגר אוטומטית לאחר 5 שניות.
+                    <br><strong>שימו לב:</strong> משחק זה נועד לתרגול בלבד ואינו מעדכן את מאגר המילים ה"ידועות" שלכם.
+                </p>
+                <button id="start-game-btn">התחל משחק</button>
+            </div>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div id="speaker-control-area">
+                <div id="play-sound-btn">🎧</div>
+                <div id="speed-control">1x</div>
+            </div>
+            <div id="options-container" class="grid grid-cols-2 gap-4"></div>
+            <p id="feedback-text" class="h-8 mt-6 text-2xl font-bold"></p>
+        </div>
+        
+        <div id="finished-screen" class="hidden">
+            <h2 class="text-4xl font-bold text-green-400">סיימת את כל המילים!</h2>
+            <p class="text-xl mt-2">כל הכבוד! תרגלת את כל המילים שהיית צריך במאגר זה.</p>
+            <button onclick="window.location.reload()" class="mt-8 modal-btn bg-blue-600 hover:bg-blue-700 text-white">שחק שוב</button>
+        </div>
+
+        <div id="correct-answer-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                 <h2 id="modal-word-en" class="modal-word-en">Word</h2>
+                 <p id="modal-word-he" class="modal-word-he">תרגום</p>
+                 <button id="modal-next-btn" class="modal-btn bg-indigo-600 hover:bg-indigo-700 text-white w-full">הבא</button>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { wordBanks } from './word-banks.js';
+
+    // --- Config and Initialization ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
+        authDomain: "english-4-you-fb80b.firebaseapp.com",
+        projectId: "english-4-you-fb80b",
+        storageBucket: "english-4-you-fb80b.appspot.com",
+        messagingSenderId: "974140187099",
+        appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- State ---
+    let currentUser, currentBankId;
+    let questionPool = [];
+    let currentQuestion;
+    const allWordsEver = Object.values(wordBanks).flat();
+    const playbackRates = [0.25, 0.5, 1, 1.25];
+    let currentRateIndex = 2; // Default is 1x
+    let modalTimeout;
+
+    // --- UI Elements ---
+    const loadingScreen = document.getElementById('loading-screen');
+    const instructionsScreen = document.getElementById('instructions-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const finishedScreen = document.getElementById('finished-screen');
+    const playSoundBtn = document.getElementById('play-sound-btn');
+    const speedControl = document.getElementById('speed-control');
+    const optionsContainer = document.getElementById('options-container');
+    const feedbackText = document.getElementById('feedback-text');
+    const correctAnswerModal = document.getElementById('correct-answer-modal');
+    const modalWordEn = document.getElementById('modal-word-en');
+    const modalWordHe = document.getElementById('modal-word-he');
+    const modalNextBtn = document.getElementById('modal-next-btn');
+
+    // --- Main Logic ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentBankId = urlParams.get('bank');
+        if (!currentBankId) { document.body.innerHTML = '<h1>שגיאה: לא נבחר מאגר מילים.</h1>'; return; }
+        onAuthStateChanged(auth, user => {
+            if (user) { currentUser = user; initializeGame(); } 
+            else { window.location.href = 'login.html'; }
+        });
+    });
+
+    async function initializeGame() {
+        const wordsInBank = wordBanks[currentBankId] || [];
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+        const docSnap = await getDoc(progressDocRef);
+        const knownWords = docSnap.exists() ? docSnap.data().knownWords || [] : [];
+        
+        questionPool = wordsInBank.filter(word => !knownWords.includes(word.en));
+        
+        if (questionPool.length === 0) {
+            alert('כל הכבוד, עברת על כל המילים במאגר! המשחק יתחיל עם מילים אקראיות מכלל המאגר.');
+            questionPool = [...wordsInBank];
+        }
+        
+        questionPool.sort(() => Math.random() - 0.5);
+        loadingScreen.classList.add('hidden');
+        instructionsScreen.classList.remove('hidden');
+    }
+    
+    document.getElementById('start-game-btn').addEventListener('click', () => {
+        instructionsScreen.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+        displayNextQuestion();
+    });
+
+    function displayNextQuestion() {
+        if (questionPool.length === 0) {
+            gameScreen.classList.add('hidden');
+            finishedScreen.classList.remove('hidden');
+            return;
+        }
+
+        currentQuestion = questionPool.pop(); // Take one word out
+        feedbackText.textContent = '';
+        
+        const options = [{ text: currentQuestion.en, correct: true }];
+        while (options.length < 4) {
+            const randomWord = allWordsEver[Math.floor(Math.random() * allWordsEver.length)];
+            if (randomWord.en !== currentQuestion.en && !options.some(opt => opt.text === randomWord.en)) {
+                options.push({ text: randomWord.en, correct: false });
+            }
+        }
+        options.sort(() => Math.random() - 0.5);
+
+        optionsContainer.innerHTML = '';
+        options.forEach(option => {
+            const button = document.createElement('button');
+            button.className = 'option-btn';
+            button.textContent = option.text;
+            button.onclick = (event) => handleAnswer(option.correct, event.target);
+            optionsContainer.appendChild(button);
+        });
+        
+        speakWord(currentQuestion.en);
+    }
+    
+    function speakWord(word, rate = playbackRates[currentRateIndex]) {
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US';
+        utterance.rate = rate;
+        speechSynthesis.speak(utterance);
+    }
+
+    playSoundBtn.addEventListener('click', () => speakWord(currentQuestion.en));
+    speedControl.addEventListener('click', () => {
+        currentRateIndex = (currentRateIndex + 1) % playbackRates.length;
+        speedControl.textContent = playbackRates[currentRateIndex] + 'x';
+    });
+
+    function handleAnswer(isCorrect, buttonEl) {
+        optionsContainer.querySelectorAll('button').forEach(btn => btn.disabled = true);
+        
+        if (isCorrect) {
+            buttonEl.classList.add('correct');
+            showCorrectAnswerModal();
+        } else {
+            buttonEl.classList.add('incorrect');
+            feedbackText.textContent = `טעות...`;
+            optionsContainer.querySelectorAll('button').forEach(btn => {
+                if (btn.textContent === currentQuestion.en) btn.classList.add('correct');
+            });
+            setTimeout(displayNextQuestion, 2000);
+        }
+    }
+
+    function showCorrectAnswerModal() {
+        modalWordEn.textContent = currentQuestion.en;
+        modalWordHe.textContent = currentQuestion.he;
+        correctAnswerModal.classList.remove('hidden');
+        
+        modalWordEn.onclick = () => speakWord(currentQuestion.en);
+
+        modalNextBtn.onclick = () => {
+            clearTimeout(modalTimeout);
+            hideModalAndProceed();
+        };
+
+        modalTimeout = setTimeout(hideModalAndProceed, 5000);
+    }
+
+    function hideModalAndProceed() {
+        correctAnswerModal.classList.add('hidden');
+        displayNextQuestion();
+    }
+</script>
+</body>
+</html>
