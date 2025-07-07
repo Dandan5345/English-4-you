@@ -7,92 +7,98 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Assistant', sans-serif; background-color: #111827; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .screen { width: 100%; max-width: 600px; margin: auto; padding: 1rem; text-align: center; }
-        
-        /* === START: CORRECTED FLASHCARD STYLES === */
-        .flashcard-container {
-            perspective: 1000px;
-            -webkit-perspective: 1000px; /* For older browser support */
-        }
-        .flashcard {
-            width: 100%;
-            height: 250px;
-            position: relative;
-            transition: transform 0.6s;
-            transform-style: preserve-3d;
-            -webkit-transform-style: preserve-3d; /* For older browser support */
-            cursor: pointer;
-        }
-        .flashcard.flipped {
-            transform: rotateY(180deg);
-            -webkit-transform: rotateY(180deg); /* For older browser support */
-        }
-        .flashcard-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            -webkit-backface-visibility: hidden; /* Hide the back side of the element */
-            backface-visibility: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: bold;
-            border-radius: 1.5rem;
-            border: 2px solid #374151;
-        }
-        .flashcard-front {
-            background-color: #1f2937;
-            dir: ltr; /* English is Left-to-Right */
-        }
-        .flashcard-back {
-            background-color: #2c394f; /* Slightly different background for the back */
-            transform: rotateY(180deg);
-            -webkit-transform: rotateY(180deg);
-            dir: rtl; /* Hebrew is Right-to-Left */
-        }
-        /* === END: CORRECTED FLASHCARD STYLES === */
+        body { font-family: 'Assistant', sans-serif; background-color: #111827; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding-top: 5rem; /* Space for back button */ }
+        .container { width: 100%; max-width: 600px; margin: auto; padding: 1rem; text-align: center; }
+        .hidden { display: none !important; }
 
+        /* Back Button */
+        .back-button {
+            position: fixed; top: 20px; right: 20px;
+            background-color: rgba(31, 41, 55, 0.8); backdrop-filter: blur(5px);
+            color: white; padding: 0.5rem 1rem; border-radius: 0.5rem;
+            text-decoration: none; font-weight: 600; transition: background-color .2s; z-index: 100;
+        }
+        .back-button:hover { background-color: #374151; }
+
+        /* Menu Screen */
+        .menu-button {
+            display: block; width: 100%; background-color: #1f2937; border: 1px solid #374151;
+            padding: 1.5rem; margin-bottom: 1rem; border-radius: 1rem;
+            font-size: 1.25rem; font-weight: 700; text-align: center;
+            cursor: pointer; transition: all .2s;
+        }
+        .menu-button:hover { border-color: #4f46e5; transform: translateY(-4px); }
+        .menu-button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .word-count { font-size: 0.9rem; font-weight: 400; color: #9ca3af; margin-top: 4px; }
+        
+        /* Flashcard styles */
+        .flashcard-container { perspective: 1000px; -webkit-perspective: 1000px; }
+        .flashcard { width: 100%; height: 250px; position: relative; transition: transform 0.6s; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; cursor: pointer; }
+        .flashcard.flipped { transform: rotateY(180deg); -webkit-transform: rotateY(180deg); }
+        .flashcard-face { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; border-radius: 1.5rem; border: 2px solid #374151; }
+        .flashcard-front { background-color: #1f2937; dir: ltr; }
+        .flashcard-back { background-color: #2c394f; transform: rotateY(180deg); -webkit-transform: rotateY(180deg); dir: rtl; }
+
+        /* Action Buttons */
         .btn { padding: 1rem 2rem; border-radius: 0.75rem; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all .2s; border: none; }
         .btn-know { background-color: #16a34a; color: white; }
         .btn-know:hover { background-color: #15803d; }
         .btn-dont-know { background-color: #dc2626; color: white; }
         .btn-dont-know:hover { background-color: #b91c1c; }
-        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div id="game-screen" class="screen">
-        <h1 id="game-title" class="text-3xl font-bold mb-4">בחן מילה</h1>
-        <p id="progress-text" class="text-lg text-gray-400 mb-8">מילה 1 מתוך 200</p>
+    <a href="psico.html" class="back-button">→ חזור</a>
 
-        <div id="flashcard-container" class="flashcard-container mb-8">
-            <div id="flashcard" class="flashcard">
-                <div id="flashcard-front" class="flashcard-face flashcard-front"></div>
-                <div id="flashcard-back" class="flashcard-face flashcard-back"></div>
-            </div>
-        </div>
-
-        <div id="action-buttons" class="flex justify-around gap-4 hidden">
-            <button id="btn-dont-know" class="btn btn-dont-know">לא ידעתי</button>
-            <button id="btn-know" class="btn btn-know">ידעתי</button>
+    <div class="container">
+        <div id="loading-screen">
+            <h1 class="text-3xl font-bold">טוען נתונים...</h1>
         </div>
         
-        <div id="finished-message" class="hidden">
-            <h2 class="text-4xl font-bold text-green-400">כל הכבוד!</h2>
-            <p class="text-xl mt-2">סיימת לתרגל את כל המילים במאגר זה.</p>
-            <a href="psico.html" class="inline-block mt-8 bg-indigo-600 text-white py-3 px-6 rounded-lg text-lg hover:bg-indigo-700">חזרה למאגרים</a>
+        <div id="menu-screen" class="hidden">
+            <h1 id="menu-title" class="text-3xl font-bold mb-8">בחר קטגוריית תרגול</h1>
+            <button id="btn-unseen" class="menu-button">
+                <span class="button-text">מילים שלא עברתי</span>
+                <div class="word-count">(0 מילים)</div>
+            </button>
+            <button id="btn-unknown" class="menu-button">
+                מילים שלא ידעתי
+                <div class="word-count">(0 מילים)</div>
+            </button>
+            <button id="btn-known" class="menu-button">
+                מילים שידעתי
+                <div class="word-count">(0 מילים)</div>
+            </button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <p id="progress-text" class="text-lg text-gray-400 mb-8"></p>
+            <div id="flashcard-container" class="flashcard-container mb-8">
+                <div id="flashcard" class="flashcard">
+                    <div id="flashcard-front" class="flashcard-face flashcard-front"></div>
+                    <div id="flashcard-back" class="flashcard-face flashcard-back"></div>
+                </div>
+            </div>
+            <div id="action-buttons" class="flex justify-around gap-4 hidden">
+                <button id="btn-dont-know" class="btn btn-dont-know">לא ידעתי</button>
+                <button id="btn-know" class="btn btn-know">ידעתי</button>
+            </div>
+            <div id="finished-message" class="hidden">
+                <h2 class="text-4xl font-bold text-green-400">מעולה!</h2>
+                <p class="text-xl mt-2">סיימת את כל המילים בקטגוריה זו.</p>
+                <button id="back-to-menu-btn" class="inline-block mt-8 bg-indigo-600 text-white py-3 px-6 rounded-lg text-lg hover:bg-indigo-700">חזרה לתפריט</button>
+            </div>
         </div>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
     import { wordBanks } from './word-banks.js';
 
+    // --- Config and Initialization ---
     const firebaseConfig = {
         apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
         authDomain: "english-4-you-fb80b.firebaseapp.com",
@@ -101,69 +107,119 @@
         messagingSenderId: "974140187099",
         appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
     };
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // --- Game State ---
+    // --- Global State ---
     let currentUser;
     let currentBankId;
+    let allWordsInBank = [];
     let wordsToPractice = [];
     let currentWordIndex = 0;
 
     // --- UI Elements ---
-    const gameTitle = document.getElementById('game-title');
-    const progressText = document.getElementById('progress-text');
-    const flashcard = document.getElementById('flashcard');
-    const flashcardFront = document.getElementById('flashcard-front');
-    const flashcardBack = document.getElementById('flashcard-back');
+    const screens = {
+        loading: document.getElementById('loading-screen'),
+        menu: document.getElementById('menu-screen'),
+        game: document.getElementById('game-screen')
+    };
+    const menuTitle = document.getElementById('menu-title');
+    const flashcardElements = {
+        card: document.getElementById('flashcard'),
+        front: document.getElementById('flashcard-front'),
+        back: document.getElementById('flashcard-back'),
+        container: document.getElementById('flashcard-container')
+    };
     const actionButtons = document.getElementById('action-buttons');
-    const btnKnow = document.getElementById('btn-know');
-    const btnDontKnow = document.getElementById('btn-dont-know');
+    const progressText = document.getElementById('progress-text');
     const finishedMessage = document.getElementById('finished-message');
-
-
-    // --- Initialization ---
+    
+    // --- Main Logic ---
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         currentBankId = urlParams.get('bank');
-
-        if (!currentBankId) {
-            document.body.innerHTML = '<h1>שגיאה: לא נבחר מאגר מילים.</h1>';
-            return;
-        }
+        if (!currentBankId) { document.body.innerHTML = '<h1>שגיאה: לא נבחר מאגר מילים.</h1>'; return; }
         
-        gameTitle.textContent += ` - מאגר ${currentBankId}`;
+        allWordsInBank = wordBanks[currentBankId] || [];
+        if (allWordsInBank.length === 0) { document.body.innerHTML = `<h1>מאגר מילים ${currentBankId} ריק.</h1>`; return; }
 
-        onAuthStateChanged(auth, (user) => {
+        menuTitle.textContent += ` (מאגר ${currentBankId})`;
+
+        onAuthStateChanged(auth, user => {
             if (user) {
                 currentUser = user;
-                loadWords();
+                initializeFlow();
             } else {
                 window.location.href = 'login.html';
             }
         });
     });
 
-    async function loadWords() {
-        const allWordsInBank = wordBanks[currentBankId] || [];
-        if (allWordsInBank.length === 0) {
-            document.body.innerHTML = `<h1>מאגר מילים ${currentBankId} ריק.</h1>`;
-            return;
-        }
-        
-        // For now, we will practice all words.
-        wordsToPractice = allWordsInBank;
+    async function initializeFlow() {
+        showScreen('loading');
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+        const docSnap = await getDoc(progressDocRef);
 
-        if (wordsToPractice.length === 0) {
-            showFinishedMessage();
-            return;
+        if (docSnap.exists() && (docSnap.data().knownWords?.length || docSnap.data().unknownWords?.length)) {
+            // Returning player with progress, show menu
+            buildAndShowMenu(docSnap.data());
+        } else {
+            // First time player for this bank, start game directly
+            startGameSession(allWordsInBank);
         }
+    }
+    
+    function buildAndShowMenu(progressData) {
+        const known = progressData.knownWords || [];
+        const unknown = progressData.unknownWords || [];
 
-        renderCurrentWord();
+        const unseenWords = allWordsInBank.filter(word => !known.includes(word.en) && !unknown.includes(word.en));
+        const unknownWords = allWordsInBank.filter(word => unknown.includes(word.en));
+        const knownWords = allWordsInBank.filter(word => known.includes(word.en));
+
+        // --- Setup "Unseen" Button ---
+        const btnUnseen = document.getElementById('btn-unseen');
+        if (unseenWords.length > 0) {
+            btnUnseen.querySelector('.button-text').textContent = 'מילים שלא עברתי';
+            btnUnseen.onclick = () => startGameSession(unseenWords);
+        } else {
+            // All words have been seen, change button to random practice
+            btnUnseen.querySelector('.button-text').textContent = 'תרגול אקראי של כל המילים';
+            btnUnseen.onclick = () => startGameSession(allWordsInBank, { shuffle: true });
+        }
+        btnUnseen.querySelector('.word-count').textContent = `(${unseenWords.length} מילים)`;
+        btnUnseen.disabled = unseenWords.length === 0 && allWordsInBank.length === 0;
+
+        // --- Setup "Unknown" Button ---
+        const btnUnknown = document.getElementById('btn-unknown');
+        btnUnknown.querySelector('.word-count').textContent = `(${unknownWords.length} מילים)`;
+        btnUnknown.disabled = unknownWords.length === 0;
+        btnUnknown.onclick = () => startGameSession(unknownWords);
+
+        // --- Setup "Known" Button ---
+        const btnKnown = document.getElementById('btn-known');
+        btnKnown.querySelector('.word-count').textContent = `(${knownWords.length} מילים)`;
+        btnKnown.disabled = knownWords.length === 0;
+        btnKnown.onclick = () => startGameSession(knownWords);
+
+        showScreen('menu');
     }
 
+    function startGameSession(words, options = {}) {
+        if (!words || words.length === 0) return;
+        
+        wordsToPractice = options.shuffle ? [...words].sort(() => Math.random() - 0.5) : words;
+        currentWordIndex = 0;
+        
+        // Reset UI elements
+        finishedMessage.classList.add('hidden');
+        flashcardElements.container.classList.remove('hidden');
+        
+        showScreen('game');
+        renderCurrentWord();
+    }
+    
     function renderCurrentWord() {
         if (currentWordIndex >= wordsToPractice.length) {
             showFinishedMessage();
@@ -171,59 +227,53 @@
         }
 
         const word = wordsToPractice[currentWordIndex];
-        flashcard.classList.remove('flipped');
+        flashcardElements.card.classList.remove('flipped');
         actionButtons.classList.add('hidden');
 
-        // Update content slightly before the card flips back to avoid flickering
         setTimeout(() => {
-            flashcardFront.textContent = word.en;
-            flashcardBack.textContent = word.he;
+            flashcardElements.front.textContent = word.en;
+            flashcardElements.back.textContent = word.he;
             progressText.textContent = `מילה ${currentWordIndex + 1} מתוך ${wordsToPractice.length}`;
         }, 300);
     }
+    
+    async function handleAnswer(knewTheWord) {
+        const word = wordsToPractice[currentWordIndex];
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
 
+        const updatePayload = {
+            knownWords: knewTheWord ? arrayUnion(word.en) : arrayRemove(word.en),
+            unknownWords: knewTheWord ? arrayRemove(word.en) : arrayUnion(word.en)
+        };
+
+        await setDoc(progressDocRef, updatePayload, { merge: true });
+
+        currentWordIndex++;
+        renderCurrentWord();
+    }
+    
     function showFinishedMessage() {
-        document.getElementById('flashcard-container').classList.add('hidden');
+        flashcardElements.container.classList.add('hidden');
         progressText.classList.add('hidden');
         actionButtons.classList.add('hidden');
         finishedMessage.classList.remove('hidden');
     }
     
-    // --- Event Listeners ---
-    flashcard.addEventListener('click', () => {
-        flashcard.classList.toggle('flipped');
-        if (flashcard.classList.contains('flipped')) {
-            actionButtons.classList.remove('hidden');
-        } else {
-            actionButtons.classList.add('hidden');
-        }
-    });
-
-    btnKnow.addEventListener('click', (e) => {
-        e.stopPropagation(); // prevent card from flipping back
-        handleAnswer(true);
-    });
-
-    btnDontKnow.addEventListener('click', (e) => {
-        e.stopPropagation(); // prevent card from flipping back
-        handleAnswer(false);
-    });
-
-    async function handleAnswer(knewTheWord) {
-        const word = wordsToPractice[currentWordIndex];
-        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
-
-        const fieldToUpdate = knewTheWord ? 'knownWords' : 'unknownWords';
-        
-        // Update Firestore
-        await setDoc(progressDocRef, {
-            [fieldToUpdate]: arrayUnion(word.en)
-        }, { merge: true });
-
-        // Move to next word
-        currentWordIndex++;
-        renderCurrentWord();
+    // --- UI Helpers & Event Listeners ---
+    function showScreen(screenName) {
+        Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+        screens[screenName].classList.remove('hidden');
     }
+
+    flashcardElements.card.addEventListener('click', () => {
+        flashcardElements.card.classList.toggle('flipped');
+        actionButtons.classList.toggle('hidden', !flashcardElements.card.classList.contains('flipped'));
+    });
+    
+    document.getElementById('btn-know').addEventListener('click', e => { e.stopPropagation(); handleAnswer(true); });
+    document.getElementById('btn-dont-know').addEventListener('click', e => { e.stopPropagation(); handleAnswer(false); });
+    document.getElementById('back-to-menu-btn').addEventListener('click', initializeFlow);
+
 </script>
 </body>
 </html>
