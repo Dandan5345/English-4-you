@@ -26,8 +26,12 @@
         #play-sound-btn { font-size: 5rem; cursor: pointer; transition: transform .2s; }
         #play-sound-btn:hover { transform: scale(1.1); }
         #speed-control { background-color: #374151; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; user-select: none; }
-        .option-btn { background-color: #1f2937; border: 2px solid #374151; width: 100%; padding: 1.25rem; font-size: 1.25rem; transition: all .2s ease; border-radius: 1rem; dir: ltr; }
+        
+        /* CORRECTED: Removed fixed direction for option buttons */
+        .option-btn { background-color: #1f2937; border: 2px solid #374151; width: 100%; padding: 1.25rem; font-size: 1.25rem; transition: all .2s ease; border-radius: 1rem; }
         .option-btn:not(:disabled):hover { background-color: #4f46e5; border-color: #818cf8; }
+        .option-btn:disabled { cursor: not-allowed; }
+
         .option-btn.correct { background-color: #16a34a !important; border-color: #4ade80 !important; }
         .option-btn.incorrect { background-color: #dc2626 !important; border-color: #f87171 !important; }
         
@@ -49,7 +53,7 @@
                 <h1 class="text-4xl font-bold gradient-text mb-4">אמריקאי בשמיעה</h1>
                 <h2>איך המשחק עובד?</h2>
                 <p>
-                    במשחק זה תתרגלו את יכולת הבנת הנשמע שלכם. לחצו על אייקון הרמקול 🎧 כדי לשמוע מילה באנגלית. לאחר מכן, בחרו את המילה הנכונה מבין ארבע האפשרויות שיוצגו.
+                    במשחק זה תתרגלו את יכולת הבנת הנשמע שלכם. לחצו על אייקון הרמקול 🎧 כדי לשמוע מילה באנגלית. לאחר מכן, בחרו את **התרגום הנכון בעברית** מבין ארבע האפשרויות שיוצגו.
                 </p>
                 <p>
                     ליד הרמקול תמצאו כפתור לשליטה על **מהירות ההקראה** (לדוגמה: 1x). לחיצה עליו תשנה את מהירות השמע, ותאפשר לכם להתאמן בקצב שנוח לכם.
@@ -170,14 +174,16 @@
             return;
         }
 
-        currentQuestion = questionPool.pop(); // Take one word out
+        currentQuestion = questionPool.pop();
         feedbackText.textContent = '';
         
-        const options = [{ text: currentQuestion.en, correct: true }];
+        // --- CORRECTED LOGIC: Options are Hebrew translations ---
+        const options = [{ text: currentQuestion.he, correct: true }];
         while (options.length < 4) {
             const randomWord = allWordsEver[Math.floor(Math.random() * allWordsEver.length)];
-            if (randomWord.en !== currentQuestion.en && !options.some(opt => opt.text === randomWord.en)) {
-                options.push({ text: randomWord.en, correct: false });
+            // Ensure the distractor's Hebrew text is not the correct answer or a duplicate
+            if (randomWord.he !== currentQuestion.he && !options.some(opt => opt.text === randomWord.he)) {
+                options.push({ text: randomWord.he, correct: false });
             }
         }
         options.sort(() => Math.random() - 0.5);
@@ -216,8 +222,9 @@
         } else {
             buttonEl.classList.add('incorrect');
             feedbackText.textContent = `טעות...`;
+            // --- CORRECTED LOGIC: Find the correct answer by Hebrew text ---
             optionsContainer.querySelectorAll('button').forEach(btn => {
-                if (btn.textContent === currentQuestion.en) btn.classList.add('correct');
+                if (btn.textContent === currentQuestion.he) btn.classList.add('correct');
             });
             setTimeout(displayNextQuestion, 2000);
         }
