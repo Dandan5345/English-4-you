@@ -232,7 +232,7 @@
         gamesSectionTitle.textContent = `משחקים עבור מאגר ${bankId}`;
         gameGrid.innerHTML = '';
 
-       const psicoGames = {
+    const psicoGames = {
     'flashcards': { 
         title: 'בחן מילה', 
         file: `flashcard-game.html?bank=${bankId}`, 
@@ -247,8 +247,14 @@
         title: 'משחק הזיכרון',
         file: `memory-game.html?bank=${bankId}`,
         icon: '🧠'
+    },
+    'auditory-quiz': {
+        title: 'אמריקאי בשמיעה',
+        file: 'auditory-quiz.html?bank=' + bankId,
+        icon: '🎧'
     }
 };
+
         for (const [key, game] of Object.entries(psicoGames)) {
             const card = document.createElement('a');
             card.href = game.file;
