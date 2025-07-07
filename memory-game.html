@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק הזיכרון</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Assistant', sans-serif; background-color: #111827; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 900px; margin: auto; padding: 1rem; text-align: center; }
+        .hidden { display: none !important; }
+
+        .back-button { position: fixed; top: 20px; right: 20px; background-color: rgba(31, 41, 55, 0.8); backdrop-filter: blur(5px); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; transition: background-color .2s; z-index: 100; }
+        .back-button:hover { background-color: #374151; }
+        
+        /* Instructions Screen */
+        .instructions-box { background-color: rgba(31, 41, 55, 0.5); border: 1px solid #374151; border-radius: 1.5rem; padding: 2rem; }
+        .instructions-box h2 { font-size: 2rem; font-weight: 700; color: #c084fc; }
+        .instructions-box p { font-size: 1.1rem; color: #d1d5db; line-height: 1.8; margin-top: 1rem; }
+        #start-game-btn { background-color: #4f46e5; color: white; padding: 0.75rem 2rem; font-size: 1.25rem; font-weight: 700; border-radius: 0.75rem; cursor: pointer; transition: background-color .2s; margin-top: 2rem; }
+        #start-game-btn:hover { background-color: #6366f1; }
+
+        /* Memory Game Grid */
+        #memory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; }
+        .memory-card { background-color: transparent; height: 120px; perspective: 1000px; cursor: pointer; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .memory-card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; border-radius: 1rem; font-weight: 600; font-size: 1.1rem; padding: 0.5rem; }
+        .card-back { background-color: #374151; border: 2px solid #4b5563; }
+        .card-front { background-color: #1f2937; border: 2px solid #6366f1; transform: rotateY(180deg); }
+        .memory-card.matched { cursor: default; opacity: 0.4; }
+        
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 200; }
+        .modal-content { background-color: #1f2937; padding: 2rem; border-radius: 1.5rem; border: 1px solid #374151; max-width: 500px; box-shadow: 0 20px 25px -5px rgba(0,0,0,.2),0 8px 10px -6px rgba(0,0,0,.2); }
+        .modal-btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; border: none; cursor: pointer; transition: background-color .2s; }
+        
+        /* Flashcard-in-modal specific styles */
+        #flashcard-in-modal { height: 150px; font-size: 2rem; }
+    </style>
+</head>
+<body>
+    <a href="psico.html" class="back-button">→ חזור</a>
+    <div class="container">
+        <div id="loading-screen"><h1 class="text-3xl font-bold">טוען נתונים...</h1></div>
+        
+        <div id="instructions-screen" class="hidden">
+            <div class="instructions-box">
+                <h1 class="text-4xl font-bold gradient-text mb-4">משחק הזיכרון</h1>
+                <p id="word-count-info" class="text-xl text-yellow-400 mb-6 font-semibold"></p>
+                <h2>איך המשחק עובד?</h2>
+                <p>
+                    על הלוח מפוזרים קלפים הפוכים המכילים זוגות של מילים (מילה באנגלית והתרגום שלה בעברית).
+                    בכל תור עליך להפוך שני קלפים. אם מצאת זוג תואם, הקלפים יישארו חשופים. המטרה היא למצוא את כל הזוגות.
+                </p>
+                <p>
+                    <strong>שימו לב:</strong> משחק זה נועד לתרגול הזיכרון בלבד. הוא לא מעדכן את מאגר המילים ה"ידועות" שלכם באופן אוטומטי.
+                </p>
+                <h2 class="mt-4">בסיום המשחק:</h2>
+                <p>
+                    יופיע חלון שישאל אתכם אם תרצו לתרגל את המילים מהמשחק האחרון ב"בחן מילה". אם תסכימו, תוכלו לעבור על המילים ולעדכן את סטטוס הידיעה שלכם ב-Firebase. אם תסרבו, תוכלו לבחור להתחיל סיבוב נוסף עם מילים חדשות.
+                </p>
+                <button id="start-game-btn">התחל משחק</button>
+            </div>
+        </div>
+
+        <div id="game-board-screen" class="hidden">
+            <div id="memory-grid"></div>
+        </div>
+        
+        <div id="post-game-modal" class="modal-overlay hidden">
+            <div id="modal-content-main" class="modal-content">
+                 </div>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { wordBanks } from './word-banks.js';
+
+    // --- Config and Initialization ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
+        authDomain: "english-4-you-fb80b.firebaseapp.com",
+        projectId: "english-4-you-fb80b",
+        storageBucket: "english-4-you-fb80b.appspot.com",
+        messagingSenderId: "974140187099",
+        appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- State ---
+    let currentUser, currentBankId;
+    let wordsToPractice = [];
+    let sessionWords = [];
+    let firstCard, secondCard;
+    let lockBoard = false;
+    let matchedPairs = 0;
+
+    // --- UI Elements ---
+    const loadingScreen = document.getElementById('loading-screen');
+    const instructionsScreen = document.getElementById('instructions-screen');
+    const gameBoardScreen = document.getElementById('game-board-screen');
+    const memoryGrid = document.getElementById('memory-grid');
+    const wordCountInfo = document.getElementById('word-count-info');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const postGameModal = document.getElementById('post-game-modal');
+    const modalContentMain = document.getElementById('modal-content-main');
+
+    // --- Main Logic ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentBankId = urlParams.get('bank');
+        if (!currentBankId) { document.body.innerHTML = '<h1>שגיאה: לא נבחר מאגר מילים.</h1>'; return; }
+        onAuthStateChanged(auth, user => {
+            if (user) { currentUser = user; initializePage(); } 
+            else { window.location.href = 'login.html'; }
+        });
+    });
+
+    async function initializePage() {
+        loadingScreen.classList.remove('hidden');
+        instructionsScreen.classList.add('hidden');
+        gameBoardScreen.classList.add('hidden');
+        
+        const wordsInBank = wordBanks[currentBankId] || [];
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+        const docSnap = await getDoc(progressDocRef);
+        const knownWords = docSnap.exists() ? docSnap.data().knownWords || [] : [];
+        
+        wordsToPractice = wordsInBank.filter(word => !knownWords.includes(word.en));
+        
+        if (wordsToPractice.length === 0) {
+            alert('כל הכבוד, עברת על כל המילים במאגר! המשחק יתחיל עם 10 מילים אקראיות מכלל המאגר.');
+            wordsToPractice = [...wordsInBank].sort(() => 0.5 - Math.random());
+        }
+        
+        wordCountInfo.textContent = `כרגע יש לך ${wordsToPractice.length} מילים לתרגל במאגר זה.`;
+        loadingScreen.classList.add('hidden');
+        instructionsScreen.classList.remove('hidden');
+    }
+
+    startGameBtn.addEventListener('click', startGame);
+
+    function startGame() {
+        instructionsScreen.classList.add('hidden');
+        gameBoardScreen.classList.remove('hidden');
+        
+        matchedPairs = 0;
+        const shuffledPracticeWords = [...wordsToPractice].sort(() => 0.5 - Math.random());
+        const wordsCount = Math.min(shuffledPracticeWords.length, 10);
+        sessionWords = shuffledPracticeWords.slice(0, wordsCount);
+
+        let cards = [];
+        sessionWords.forEach(word => {
+            cards.push({ value: word.en, type: 'en', pairId: word.en });
+            cards.push({ value: word.he, type: 'he', pairId: word.en });
+        });
+        cards.sort(() => 0.5 - Math.random());
+
+        memoryGrid.innerHTML = '';
+        cards.forEach(cardData => {
+            const cardElement = document.createElement('div');
+            cardElement.classList.add('memory-card');
+            cardElement.dataset.pairId = cardData.pairId;
+            cardElement.innerHTML = `
+                <div class="card-inner">
+                    <div class="card-face card-back"></div>
+                    <div class="card-face card-front" style="direction:${cardData.type === 'he' ? 'rtl' : 'ltr'}">${cardData.value}</div>
+                </div>
+            `;
+            cardElement.addEventListener('click', () => flipCard(cardElement));
+            memoryGrid.appendChild(cardElement);
+        });
+    }
+
+    function flipCard(cardElement) {
+        if (lockBoard || cardElement.classList.contains('flipped') || cardElement === firstCard) return;
+        
+        cardElement.classList.add('flipped');
+        
+        if (!firstCard) {
+            firstCard = cardElement;
+            return;
+        }
+        
+        secondCard = cardElement;
+        lockBoard = true;
+        checkForMatch();
+    }
+
+    function checkForMatch() {
+        let isMatch = firstCard.dataset.pairId === secondCard.dataset.pairId;
+        isMatch ? disableCards() : unflipCards();
+    }
+
+    function disableCards() {
+        firstCard.classList.add('matched');
+        secondCard.classList.add('matched');
+        matchedPairs++;
+        resetBoard();
+
+        if (matchedPairs === sessionWords.length) {
+            setTimeout(showPostGameModal, 1000);
+        }
+    }
+
+    function unflipCards() {
+        setTimeout(() => {
+            firstCard.classList.remove('flipped');
+            secondCard.classList.remove('flipped');
+            resetBoard();
+        }, 1500);
+    }
+
+    function resetBoard() {
+        [firstCard, secondCard, lockBoard] = [null, null, false];
+    }
+    
+    function showPostGameModal() {
+        postGameModal.classList.remove('hidden');
+        modalContentMain.innerHTML = `
+            <h2 class="text-2xl font-bold mb-4">כל הכבוד! מצאת את כל הזוגות.</h2>
+            <p class="mb-6">האם תרצה לתרגל את ${sessionWords.length} המילים מהמשחק האחרון ב"בחן מילה" כדי לעדכן את התקדמותך?</p>
+            <div class="flex justify-between gap-4">
+                <button id="modal-no-btn" class="modal-btn bg-gray-600 hover:bg-gray-700 text-white w-full">לא, תודה</button>
+                <button id="modal-yes-btn" class="modal-btn bg-green-600 hover:bg-green-700 text-white w-full">כן, נתרגל</button>
+            </div>
+        `;
+        document.getElementById('modal-yes-btn').onclick = () => runFlashcardMiniGame();
+        document.getElementById('modal-no-btn').onclick = () => showPlayAgainPrompt();
+    }
+
+    function showPlayAgainPrompt() {
+        modalContentMain.innerHTML = `
+            <h2 class="text-2xl font-bold mb-4">מעולה!</h2>
+            <p class="mb-6">האם תרצה להתחיל שלב נוסף עם מילים חדשות?</p>
+             <div class="flex justify-between gap-4">
+                <a href="psico.html" class="modal-btn bg-red-600 hover:bg-red-700 text-white w-full text-center">לא, חזור</a>
+                <button id="play-again-btn" class="modal-btn bg-blue-600 hover:bg-blue-700 text-white w-full">כן, עוד סיבוב</button>
+            </div>
+        `;
+        document.getElementById('play-again-btn').onclick = () => {
+            postGameModal.classList.add('hidden');
+            initializePage();
+        };
+    }
+
+    // --- Flashcard Mini-Game Logic ---
+    let miniGameIndex = 0;
+    function runFlashcardMiniGame() {
+        miniGameIndex = 0;
+        renderMiniFlashcard();
+    }
+
+    function renderMiniFlashcard() {
+        if (miniGameIndex >= sessionWords.length) {
+            modalContentMain.innerHTML = `<h2 class="text-2xl font-bold text-green-400">סיימת לעדכן!</h2><p class="mt-4">כל הכבוד! לחץ על כפתור "עוד סיבוב" למשחק נוסף או "חזור" כדי לצאת.</p>`;
+            showPlayAgainPrompt(); // Show the final choice after finishing flashcards.
+            return;
+        }
+        const word = sessionWords[miniGameIndex];
+        modalContentMain.innerHTML = `
+            <p class="text-sm text-gray-400">בוחן מהיר (${miniGameIndex + 1}/${sessionWords.length})</p>
+            <div id="flashcard-in-modal" class="memory-card flipped" style="cursor:default;">
+                 <div class="card-inner">
+                    <div class="card-face card-back">${word.he}</div>
+                    <div class="card-face card-front" style="direction:ltr;">${word.en}</div>
+                </div>
+            </div>
+             <div class="flex justify-around gap-4 mt-4">
+                <button id="mini-dont-know" class="modal-btn bg-red-600 hover:bg-red-700 text-white w-full">לא ידעתי</button>
+                <button id="mini-know" class="modal-btn bg-green-600 hover:bg-green-700 text-white w-full">ידעתי</button>
+            </div>
+        `;
+        document.getElementById('flashcard-in-modal').onclick = (e) => e.currentTarget.classList.toggle('flipped');
+        document.getElementById('mini-know').onclick = () => handleMiniFlashcardAnswer(true);
+        document.getElementById('mini-dont-know').onclick = () => handleMiniFlashcardAnswer(false);
+    }
+    
+    async function handleMiniFlashcardAnswer(knewIt) {
+        const word = sessionWords[miniGameIndex];
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+        const updatePayload = {
+            knownWords: knewIt ? arrayUnion(word.en) : arrayRemove(word.en),
+            unknownWords: knewIt ? arrayRemove(word.en) : arrayUnion(word.en)
+        };
+        await setDoc(progressDocRef, updatePayload, { merge: true });
+        miniGameIndex++;
+        renderMiniFlashcard();
+    }
+</script>
+</body>
+</html>
