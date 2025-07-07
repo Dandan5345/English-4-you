@@ -1,64 +1,102 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>משחק: הבנת הנשמע</title>
+    <title>אמריקאי בשמיעה</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body{font-family:'Assistant',sans-serif;background-color:#111827;color:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1rem;overflow-x:hidden}
-        .screen{width:100%;max-width:1200px;margin:auto;animation:fadeIn .6s ease-in-out}
-        .screen.hidden{display:none !important}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-        .gradient-text{background-image:linear-gradient(to right,#60a5fa,#c084fc);-webkit-background-clip:text;background-clip:text;color:transparent}
-        .btn{display:inline-block;font-weight:600;padding:.75rem 1.5rem;border-radius:.5rem;transition:all .2s ease-in-out;border:none;cursor:pointer}.btn-primary{background-color:#4f46e5;color:#fff}.btn-primary:hover{background-color:#6366f1;transform:translateY(-2px);box-shadow:0 4px 15px rgba(79,70,229,.4)}.btn-secondary{background-color:#374151;color:#fff}.btn-secondary:hover{background-color:#4b5563}
-        .input-field{background-color:#1f2937;border:2px solid #4b5563;border-radius:.5rem;padding:.75rem;font-size:1.25rem;color:#fff;text-align:center;transition:border-color .2s,box-shadow .2s}.input-field:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.3)}.input-field.correct{border-color:#16a34a !important}.input-field.incorrect{border-color:#dc2626 !important;animation:shake .5s}
-        @keyframes shake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-10px)}20%,40%,60%,80%{transform:translateX(10px)}}
-        .game-container{background-color:rgba(31,41,55,.8);backdrop-filter:blur(10px);border:1px solid #374151;padding:2rem;border-radius:1.5rem;box-shadow:0 20px 25px -5px rgba(0,0,0,.2),0 8px 10px -6px rgba(0,0,0,.2)}
-        .progress-bar-container{width:100%;background-color:#374151;border-radius:9999px;height:10px;margin-bottom:1.5rem;overflow:hidden}.progress-bar{background-image:linear-gradient(to right,#818cf8,#c084fc);height:100%;border-radius:9999px;transition:width .5s ease-in-out}
+        body { font-family: 'Assistant', sans-serif; background-color: #111827; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 700px; margin: auto; padding: 1rem; text-align: center; }
+        .hidden { display: none !important; }
+
+        .back-button { position: fixed; top: 20px; right: 20px; background-color: rgba(31, 41, 55, 0.8); backdrop-filter: blur(5px); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; transition: background-color .2s; z-index: 100; }
+        .back-button:hover { background-color: #374151; }
+
+        /* Instructions Screen */
+        .instructions-box { background-color: rgba(31, 41, 55, 0.5); border: 1px solid #374151; border-radius: 1.5rem; padding: 2rem; }
+        .instructions-box h2 { font-size: 2rem; font-weight: 700; color: #c084fc; }
+        .instructions-box p { font-size: 1.1rem; color: #d1d5db; line-height: 1.8; margin-top: 1rem; }
+        #start-game-btn { background-color: #4f46e5; color: white; padding: 0.75rem 2rem; font-size: 1.25rem; font-weight: 700; border-radius: 0.75rem; cursor: pointer; transition: background-color .2s; margin-top: 2rem; }
+        #start-game-btn:hover { background-color: #6366f1; }
+
+        /* Game Screen */
+        #speaker-control-area { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-bottom: 3rem; }
+        #play-sound-btn { font-size: 5rem; cursor: pointer; transition: transform .2s; }
+        #play-sound-btn:hover { transform: scale(1.1); }
+        #speed-control { background-color: #374151; color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; user-select: none; }
+        
+        /* CORRECTED: Removed fixed direction for option buttons */
+        .option-btn { background-color: #1f2937; border: 2px solid #374151; width: 100%; padding: 1.25rem; font-size: 1.25rem; transition: all .2s ease; border-radius: 1rem; }
+        .option-btn:not(:disabled):hover { background-color: #4f46e5; border-color: #818cf8; }
+        .option-btn:disabled { cursor: not-allowed; }
+
+        .option-btn.correct { background-color: #16a34a !important; border-color: #4ade80 !important; }
+        .option-btn.incorrect { background-color: #dc2626 !important; border-color: #f87171 !important; }
+        
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 200; }
+        .modal-content { background-color: #1f2937; padding: 2rem; border-radius: 1.5rem; border: 1px solid #374151; max-width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,.2),0 8px 10px -6px rgba(0,0,0,.2); }
+        .modal-word-en { font-size: 2.5rem; font-weight: 800; dir: ltr; cursor: pointer; }
+        .modal-word-he { font-size: 1.5rem; color: #9ca3af; margin-bottom: 1.5rem; }
+        .modal-btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; border: none; cursor: pointer; transition: background-color .2s; }
     </style>
 </head>
 <body>
-
-    <div id="user-greeting-container"></div>
-
-    <div id="loading-screen" class="screen text-center">
-        <h1 class="text-3xl font-bold gradient-text">טוען משחק...</h1>
-    </div>
-
-    <div id="game-screen" class="screen hidden flex-col items-center w-full">
-        <div class="game-container w-full max-w-3xl">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-3xl font-bold gradient-text">הבנת הנשמע</h2>
-                <div id="progress-text" class="text-lg text-gray-300"></div>
+    <a href="psico.html" class="back-button">→ חזור</a>
+    <div class="container">
+        <div id="loading-screen"><h1 class="text-3xl font-bold">טוען...</h1></div>
+        
+        <div id="instructions-screen" class="hidden">
+            <div class="instructions-box">
+                <h1 class="text-4xl font-bold gradient-text mb-4">אמריקאי בשמיעה</h1>
+                <h2>איך המשחק עובד?</h2>
+                <p>
+                    במשחק זה תתרגלו את יכולת הבנת הנשמע שלכם. לחצו על אייקון הרמקול 🎧 כדי לשמוע מילה באנגלית. לאחר מכן, בחרו את **התרגום הנכון בעברית** מבין ארבע האפשרויות שיוצגו.
+                </p>
+                <p>
+                    ליד הרמקול תמצאו כפתור לשליטה על **מהירות ההקראה** (לדוגמה: 1x). לחיצה עליו תשנה את מהירות השמע, ותאפשר לכם להתאמן בקצב שנוח לכם.
+                </p>
+                <p>
+                    לאחר תשובה נכונה, יופיע חלון שיציג את המילה והתרגום שלה, וייסגר אוטומטית לאחר 5 שניות.
+                    <br><strong>שימו לב:</strong> משחק זה נועד לתרגול בלבד ואינו מעדכן את מאגר המילים ה"ידועות" שלכם.
+                </p>
+                <button id="start-game-btn">התחל משחק</button>
             </div>
-            <div class="progress-bar-container">
-                <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
-            </div>
-            <div id="game-content" class="min-h-[350px] flex flex-col justify-center items-center"></div>
-            <div id="feedback" class="mt-4 text-xl font-bold h-12 text-center"></div>
         </div>
-        <a href="hub.html" class="btn btn-secondary mt-8">חזור למרכז המשחקים</a>
-    </div>
 
-    <div id="score-screen" class="screen hidden flex-col items-center text-center">
-        <div class="game-container max-w-lg">
-            <h1 class="text-5xl font-bold mb-4 gradient-text">סיימת!</h1>
-            <p id="score-message" class="text-2xl text-gray-300 mb-2"></p>
-            <p id="final-score" class="text-7xl font-bold my-8"></p>
-            <div class="flex gap-4 justify-center">
-                <button id="play-again-btn" class="btn btn-primary">שחק שוב</button>
-                <a href="hub.html" class="btn btn-secondary">בחר משחק אחר</a>
+        <div id="game-screen" class="hidden">
+            <div id="speaker-control-area">
+                <div id="play-sound-btn">🎧</div>
+                <div id="speed-control">1x</div>
+            </div>
+            <div id="options-container" class="grid grid-cols-2 gap-4"></div>
+            <p id="feedback-text" class="h-8 mt-6 text-2xl font-bold"></p>
+        </div>
+        
+        <div id="finished-screen" class="hidden">
+            <h2 class="text-4xl font-bold text-green-400">סיימת את כל המילים!</h2>
+            <p class="text-xl mt-2">כל הכבוד! תרגלת את כל המילים שהיית צריך במאגר זה.</p>
+            <button onclick="window.location.reload()" class="mt-8 modal-btn bg-blue-600 hover:bg-blue-700 text-white">שחק שוב</button>
+        </div>
+
+        <div id="correct-answer-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                 <h2 id="modal-word-en" class="modal-word-en">Word</h2>
+                 <p id="modal-word-he" class="modal-word-he">תרגום</p>
+                 <button id="modal-next-btn" class="modal-btn bg-indigo-600 hover:bg-indigo-700 text-white w-full">הבא</button>
             </div>
         </div>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { wordBanks } from './word-banks.js';
 
+    // --- Config and Initialization ---
     const firebaseConfig = {
         apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
         authDomain: "english-4-you-fb80b.firebaseapp.com",
@@ -67,178 +105,150 @@
         messagingSenderId: "974140187099",
         appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
     };
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    function createHeader(userData) {
-        const container = document.getElementById('user-greeting-container');
-        if (!container) return;
-        container.innerHTML = '';
-        const greetingDiv = document.createElement('div');
-        greetingDiv.className = 'fixed top-4 right-4 bg-gray-800 bg-opacity-80 backdrop-blur-sm text-white py-2 px-4 rounded-lg shadow-lg cursor-pointer z-50';
-        const now = new Date();
-        const hour = now.getHours();
-        let timeGreeting = (hour >= 5 && hour < 12) ? 'בוקר טוב' : (hour >= 12 && hour < 18) ? 'צהריים טובים' : 'ערב טוב';
-        greetingDiv.textContent = `${timeGreeting}, ${userData.name || 'אורח'}`;
-        greetingDiv.addEventListener('click', () => {
-            if (confirm('האם אתה בטוח שברצונך להתנתק?')) {
-                signOut(auth).catch(error => console.error('Sign out error', error));
-            }
-        });
-        container.appendChild(greetingDiv);
-    }
+    // --- State ---
+    let currentUser, currentBankId;
+    let questionPool = [];
+    let currentQuestion;
+    const allWordsEver = Object.values(wordBanks).flat();
+    const playbackRates = [0.25, 0.5, 1, 1.25];
+    let currentRateIndex = 2; // Default is 1x
+    let modalTimeout;
 
-    const gameData = {
-        easy: [ { text: 'Hello' }, { text: 'Goodbye' }, { text: 'Thank you' }, { text: 'Please' }, { text: 'Sorry' } ],
-        medium: [ { text: 'What is your name' }, { text: 'Where are you from' }, { text: 'I need some help' }, { text: 'Can you repeat that please' }, { text: 'The weather is nice today' } ],
-        hard: [ { text: 'The quick brown fox jumps over the lazy dog' }, { text: 'To be or not to be that is the question' }, { text: 'All that glitters is not gold' }, { text: 'Actions speak louder than words' }, { text: 'The early bird catches the worm' } ]
-    };
-    
-    const state = { level: 'easy', currentQuestionIndex: 0, score: 0, questions: [], user: null };
+    // --- UI Elements ---
     const loadingScreen = document.getElementById('loading-screen');
+    const instructionsScreen = document.getElementById('instructions-screen');
     const gameScreen = document.getElementById('game-screen');
-    const scoreScreen = document.getElementById('score-screen');
-    const gameContent = document.getElementById('game-content');
-    const feedbackEl = document.getElementById('feedback');
-    const progressText = document.getElementById('progress-text');
-    const progressBar = document.getElementById('progress-bar');
-    const finalScoreEl = document.getElementById('final-score');
-    const scoreMessage = document.getElementById('score-message');
-    const playAgainBtn = document.getElementById('play-again-btn');
+    const finishedScreen = document.getElementById('finished-screen');
+    const playSoundBtn = document.getElementById('play-sound-btn');
+    const speedControl = document.getElementById('speed-control');
+    const optionsContainer = document.getElementById('options-container');
+    const feedbackText = document.getElementById('feedback-text');
+    const correctAnswerModal = document.getElementById('correct-answer-modal');
+    const modalWordEn = document.getElementById('modal-word-en');
+    const modalWordHe = document.getElementById('modal-word-he');
+    const modalNextBtn = document.getElementById('modal-next-btn');
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            state.user = user;
-            const userDocRef = doc(db, "users", user.uid);
-            getDoc(userDocRef).then(docSnap => {
-                if (docSnap.exists()) {
-                    const userData = docSnap.data();
-                    createHeader(userData);
-                    state.level = userData.level || 'easy';
-                    startGame();
-                } else { window.location.href = 'login.html'; }
-            });
-        } else {
-            state.user = null;
-            const params = new URLSearchParams(window.location.search);
-            const level = params.get('level');
-            if (level) {
-                state.level = level;
-                startGame();
-            } else { window.location.href = 'index.html'; }
-        }
+    // --- Main Logic ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentBankId = urlParams.get('bank');
+        if (!currentBankId) { document.body.innerHTML = '<h1>שגיאה: לא נבחר מאגר מילים.</h1>'; return; }
+        onAuthStateChanged(auth, user => {
+            if (user) { currentUser = user; initializeGame(); } 
+            else { window.location.href = 'login.html'; }
+        });
     });
 
-    function shuffleArray(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
+    async function initializeGame() {
+        const wordsInBank = wordBanks[currentBankId] || [];
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+        const docSnap = await getDoc(progressDocRef);
+        const knownWords = docSnap.exists() ? docSnap.data().knownWords || [] : [];
+        
+        questionPool = wordsInBank.filter(word => !knownWords.includes(word.en));
+        
+        if (questionPool.length === 0) {
+            alert('כל הכבוד, עברת על כל המילים במאגר! המשחק יתחיל עם מילים אקראיות מכלל המאגר.');
+            questionPool = [...wordsInBank];
         }
-        return array;
+        
+        questionPool.sort(() => Math.random() - 0.5);
+        loadingScreen.classList.add('hidden');
+        instructionsScreen.classList.remove('hidden');
     }
     
-    function speakThis(text) {
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            utterance.rate = state.level === 'hard' ? 0.9 : 1.0;
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    function startGame() {
-        state.currentQuestionIndex = 0;
-        state.score = 0;
-        state.questions = shuffleArray([...gameData[state.level]]);
-        loadingScreen.classList.add('hidden');
-        scoreScreen.classList.add('hidden');
+    document.getElementById('start-game-btn').addEventListener('click', () => {
+        instructionsScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
-        loadQuestion();
-    }
+        displayNextQuestion();
+    });
 
-    function loadQuestion() {
-        if (state.currentQuestionIndex >= state.questions.length) {
-            showScore();
+    function displayNextQuestion() {
+        if (questionPool.length === 0) {
+            gameScreen.classList.add('hidden');
+            finishedScreen.classList.remove('hidden');
             return;
         }
-        feedbackEl.innerHTML = '';
-        updateProgress();
-        const q = state.questions[state.currentQuestionIndex];
-        gameContent.innerHTML = `
-            <p class="text-xl mb-6 text-center text-gray-300">הקשב למשפט, והקלד אותו במדויק:</p>
-            <button id="speak-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-5 rounded-full mb-8 transition transform hover:scale-110">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-volume-up-fill" viewBox="0 0 16 16"><path d="M11.536 14.01A8.473 8.473 0 0 0 14.026 8a8.473 8.473 0 0 0-2.49-6.01l-.708.707A7.476 7.476 0 0 1 13.025 8c0 2.071-.84 3.946-2.197 5.303l.708.707z"/><path d="M10.121 12.596A6.48 6.48 0 0 0 12.025 8a6.48 6.48 0 0 0-1.904-4.596l-.707.707A5.483 5.483 0 0 1 11.025 8a5.483 5.483 0 0 1-1.61 3.89l.706.706z"/><path d="M8.707 11.182A4.486 4.486 0 0 0 10.025 8a4.486 4.486 0 0 0-1.318-3.182L8 5.525A3.489 3.489 0 0 1 9.025 8 3.49 3.49 0 0 1 8 10.475l.707.707zM6.717 3.55A.5.5 0 0 1 7 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.5A.5.5 0 0 1 1 10V6a.5.5 0 0 1 .5-.5h2.325l2.363-1.89a.5.5 0 0 1 .529-.06z"/></svg>
-            </button>
-            <form id="answer-form" class="flex gap-2 w-full max-w-xl">
-                <input type="text" id="answer-input" class="input-field w-full" dir="ltr" autocomplete="off" autofocus>
-                <button type="submit" class="btn btn-primary">בדיקה</button>
-            </form>`;
-        document.getElementById('speak-btn').addEventListener('click', () => speakThis(q.text));
-        document.getElementById('answer-form').addEventListener('submit', e => checkAnswer(e, q.text));
-        setTimeout(() => speakThis(q.text), 500);
-    }
 
-    function checkAnswer(event, correctAnswer) {
-        event.preventDefault();
-        const input = document.getElementById('answer-input');
-        const userAnswer = input.value.trim().replace(/[.,?!]/g, '').toLowerCase();
-        const isCorrect = userAnswer === correctAnswer.toLowerCase().replace(/[.,?!]/g, '');
+        currentQuestion = questionPool.pop();
+        feedbackText.textContent = '';
         
-        document.querySelector('button[type="submit"]').disabled = true;
-        input.disabled = true;
-        input.classList.add(isCorrect ? 'correct' : 'incorrect');
-
-        if (isCorrect) {
-            state.score++;
-            feedbackEl.textContent = 'הבנה מצוינת!';
-            feedbackEl.style.color = '#4ade80';
-        } else {
-            feedbackEl.innerHTML = `המשפט הנכון: <span class="font-bold block" dir="ltr">${correctAnswer}</span>`;
-            feedbackEl.style.color = '#f87171';
+        // --- CORRECTED LOGIC: Options are Hebrew translations ---
+        const options = [{ text: currentQuestion.he, correct: true }];
+        while (options.length < 4) {
+            const randomWord = allWordsEver[Math.floor(Math.random() * allWordsEver.length)];
+            // Ensure the distractor's Hebrew text is not the correct answer or a duplicate
+            if (randomWord.he !== currentQuestion.he && !options.some(opt => opt.text === randomWord.he)) {
+                options.push({ text: randomWord.he, correct: false });
+            }
         }
+        options.sort(() => Math.random() - 0.5);
 
-        setTimeout(() => {
-            state.currentQuestionIndex++;
-            loadQuestion();
-        }, 2500);
+        optionsContainer.innerHTML = '';
+        options.forEach(option => {
+            const button = document.createElement('button');
+            button.className = 'option-btn';
+            button.textContent = option.text;
+            button.onclick = (event) => handleAnswer(option.correct, event.target);
+            optionsContainer.appendChild(button);
+        });
+        
+        speakWord(currentQuestion.en);
     }
     
-    function updateProgress() {
-        progressText.textContent = `שאלה ${state.currentQuestionIndex + 1} / ${state.questions.length}`;
-        const progressPercentage = ((state.currentQuestionIndex) / state.questions.length) * 100;
-        progressBar.style.width = `${progressPercentage}%`;
+    function speakWord(word, rate = playbackRates[currentRateIndex]) {
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US';
+        utterance.rate = rate;
+        speechSynthesis.speak(utterance);
     }
 
-    async function showScore() {
-        progressBar.style.width = '100%';
-        finalScoreEl.textContent = `${state.score} / ${state.questions.length}`;
-        if (state.user) {
-            scoreMessage.textContent = "התוצאה נשמרה בפרופיל שלך!";
-            const userDocRef = doc(db, "users", state.user.uid);
-            try {
-                await updateDoc(userDocRef, {
-                    "progress.listening-quiz": arrayUnion({
-                        score: state.score,
-                        total: state.questions.length,
-                        date: new Date()
-                    })
-                });
-            } catch (error) {
-                console.error("Error updating score: ", error);
-                scoreMessage.textContent = "שגיאה בשמירת התוצאה.";
-            }
+    playSoundBtn.addEventListener('click', () => speakWord(currentQuestion.en));
+    speedControl.addEventListener('click', () => {
+        currentRateIndex = (currentRateIndex + 1) % playbackRates.length;
+        speedControl.textContent = playbackRates[currentRateIndex] + 'x';
+    });
+
+    function handleAnswer(isCorrect, buttonEl) {
+        optionsContainer.querySelectorAll('button').forEach(btn => btn.disabled = true);
+        
+        if (isCorrect) {
+            buttonEl.classList.add('correct');
+            showCorrectAnswerModal();
         } else {
-            scoreMessage.textContent = "התחבר כדי לשמור את התוצאות שלך!";
+            buttonEl.classList.add('incorrect');
+            feedbackText.textContent = `טעות...`;
+            // --- CORRECTED LOGIC: Find the correct answer by Hebrew text ---
+            optionsContainer.querySelectorAll('button').forEach(btn => {
+                if (btn.textContent === currentQuestion.he) btn.classList.add('correct');
+            });
+            setTimeout(displayNextQuestion, 2000);
         }
-        gameScreen.classList.add('hidden');
-        scoreScreen.classList.remove('hidden');
     }
 
-    playAgainBtn.addEventListener('click', startGame);
-</script>
+    function showCorrectAnswerModal() {
+        modalWordEn.textContent = currentQuestion.en;
+        modalWordHe.textContent = currentQuestion.he;
+        correctAnswerModal.classList.remove('hidden');
+        
+        modalWordEn.onclick = () => speakWord(currentQuestion.en);
 
+        modalNextBtn.onclick = () => {
+            clearTimeout(modalTimeout);
+            hideModalAndProceed();
+        };
+
+        modalTimeout = setTimeout(hideModalAndProceed, 5000);
+    }
+
+    function hideModalAndProceed() {
+        correctAnswerModal.classList.add('hidden');
+        displayNextQuestion();
+    }
+</script>
 </body>
 </html>
