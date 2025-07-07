@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בחן מילה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Assistant', sans-serif; background-color: #111827; color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .screen { width: 100%; max-width: 600px; margin: auto; padding: 1rem; text-align: center; }
+        
+        /* Flashcard styles */
+        .flashcard-container { perspective: 1000px; }
+        .flashcard {
+            width: 100%; height: 250px; position: relative;
+            transform-style: preserve-3d; transition: transform 0.6s;
+            cursor: pointer;
+        }
+        .flashcard.flipped { transform: rotateY(180deg); }
+        .flashcard-face {
+            position: absolute; width: 100%; height: 100%;
+            backface-visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; font-weight: bold;
+            border-radius: 1.5rem;
+            border: 2px solid #374151;
+            background-color: #1f2937;
+        }
+        .flashcard-back { transform: rotateY(180deg); }
+        .english-face { dir: ltr; }
+
+        .btn { padding: 1rem 2rem; border-radius: 0.75rem; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all .2s; border: none; }
+        .btn-know { background-color: #16a34a; color: white; }
+        .btn-know:hover { background-color: #15803d; }
+        .btn-dont-know { background-color: #dc2626; color: white; }
+        .btn-dont-know:hover { background-color: #b91c1c; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="game-screen" class="screen">
+        <h1 id="game-title" class="text-3xl font-bold mb-4">בחן מילה</h1>
+        <p id="progress-text" class="text-lg text-gray-400 mb-8">מילה 1 מתוך 200</p>
+
+        <div id="flashcard-container" class="flashcard-container mb-8">
+            <div id="flashcard" class="flashcard">
+                <div id="flashcard-front" class="flashcard-face english-face"></div>
+                <div id="flashcard-back" class="flashcard-face"></div>
+            </div>
+        </div>
+
+        <div id="action-buttons" class="flex justify-around gap-4 hidden">
+            <button id="btn-dont-know" class="btn btn-dont-know">לא ידעתי</button>
+            <button id="btn-know" class="btn btn-know">ידעתי</button>
+        </div>
+        
+        <div id="finished-message" class="hidden">
+            <h2 class="text-4xl font-bold text-green-400">כל הכבוד!</h2>
+            <p class="text-xl mt-2">סיימת לתרגל את כל המילים במאגר זה.</p>
+            <a href="psico.html" class="inline-block mt-8 bg-indigo-600 text-white py-3 px-6 rounded-lg text-lg hover:bg-indigo-700">חזרה למאגרים</a>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { wordBanks } from './word-banks.js';
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDJIS34Bg2KWa28WQU46wV5dtDsw8qZEVM",
+        authDomain: "english-4-you-fb80b.firebaseapp.com",
+        projectId: "english-4-you-fb80b",
+        storageBucket: "english-4-you-fb80b.appspot.com",
+        messagingSenderId: "974140187099",
+        appId: "1:974140187099:web:97484c5cfc8a15d27b47fe",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- Game State ---
+    let currentUser;
+    let currentBankId;
+    let wordsToPractice = [];
+    let currentWordIndex = 0;
+
+    // --- UI Elements ---
+    const gameTitle = document.getElementById('game-title');
+    const progressText = document.getElementById('progress-text');
+    const flashcard = document.getElementById('flashcard');
+    const flashcardFront = document.getElementById('flashcard-front');
+    const flashcardBack = document.getElementById('flashcard-back');
+    const actionButtons = document.getElementById('action-buttons');
+    const btnKnow = document.getElementById('btn-know');
+    const btnDontKnow = document.getElementById('btn-dont-know');
+    const finishedMessage = document.getElementById('finished-message');
+
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        currentBankId = urlParams.get('bank');
+
+        if (!currentBankId) {
+            document.body.innerHTML = '<h1>שגיאה: לא נבחר מאגר מילים.</h1>';
+            return;
+        }
+        
+        gameTitle.textContent += ` - מאגר ${currentBankId}`;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadWords();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+    });
+
+    async function loadWords() {
+        const allWordsInBank = wordBanks[currentBankId] || [];
+        if (allWordsInBank.length === 0) {
+            document.body.innerHTML = `<h1>מאגר מילים ${currentBankId} ריק.</h1>`;
+            return;
+        }
+        
+        // Fetch user's progress to filter out words they already know
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+        const docSnap = await getDoc(progressDocRef);
+        
+        const knownWords = docSnap.exists() ? docSnap.data().knownWords || [] : [];
+        
+        // We will practice all words, but you could filter them like this:
+        // wordsToPractice = allWordsInBank.filter(word => !knownWords.includes(word.en));
+        // For now, let's practice all words.
+        wordsToPractice = allWordsInBank;
+
+        if (wordsToPractice.length === 0) {
+            showFinishedMessage();
+            return;
+        }
+
+        renderCurrentWord();
+    }
+
+    function renderCurrentWord() {
+        if (currentWordIndex >= wordsToPractice.length) {
+            showFinishedMessage();
+            return;
+        }
+
+        const word = wordsToPractice[currentWordIndex];
+        flashcard.classList.remove('flipped');
+        actionButtons.classList.add('hidden');
+
+        setTimeout(() => {
+            flashcardFront.textContent = word.en;
+            flashcardBack.textContent = word.he;
+            progressText.textContent = `מילה ${currentWordIndex + 1} מתוך ${wordsToPractice.length}`;
+        }, 300); // Wait for card to flip back
+    }
+
+    function showFinishedMessage() {
+        document.getElementById('flashcard-container').classList.add('hidden');
+        progressText.classList.add('hidden');
+        actionButtons.classList.add('hidden');
+        finishedMessage.classList.remove('hidden');
+    }
+    
+    // --- Event Listeners ---
+    flashcard.addEventListener('click', () => {
+        flashcard.classList.add('flipped');
+        actionButtons.classList.remove('hidden');
+    });
+
+    btnKnow.addEventListener('click', () => handleAnswer(true));
+    btnDontKnow.addEventListener('click', () => handleAnswer(false));
+
+    async function handleAnswer(knewTheWord) {
+        const word = wordsToPractice[currentWordIndex];
+        const progressDocRef = doc(db, "users", currentUser.uid, "progress", `bank${currentBankId}`);
+
+        const fieldToUpdate = knewTheWord ? 'knownWords' : 'unknownWords';
+        
+        // Update Firestore
+        await setDoc(progressDocRef, {
+            [fieldToUpdate]: arrayUnion(word.en)
+        }, { merge: true });
+
+        // Move to next word
+        currentWordIndex++;
+        renderCurrentWord();
+    }
+</script>
+</body>
+</html>
