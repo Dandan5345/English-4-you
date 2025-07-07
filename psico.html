@@ -232,19 +232,23 @@
         gamesSectionTitle.textContent = `משחקים עבור מאגר ${bankId}`;
         gameGrid.innerHTML = '';
 
-        const psicoGames = {
-            'flashcards': { 
-                title: 'בחן מילה', 
-                file: `flashcard-game.html?bank=${bankId}`, 
-                icon: '🃏' 
-            },
-            'american-style': { 
-                title: 'אמריקאי סטייל', 
-                file: `american-style-quiz.html?bank=${bankId}`, 
-                icon: '🇺🇸' 
-            }
-        };
-
+       const psicoGames = {
+    'flashcards': { 
+        title: 'בחן מילה', 
+        file: `flashcard-game.html?bank=${bankId}`, 
+        icon: '🃏' 
+    },
+    'american-style': { 
+        title: 'אמריקאי סטייל', 
+        file: `american-style-quiz.html?bank=${bankId}`, 
+        icon: '🇺🇸' 
+    },
+    'memory-game': {
+        title: 'משחק הזיכרון',
+        file: `memory-game.html?bank=${bankId}`,
+        icon: '🧠'
+    }
+};
         for (const [key, game] of Object.entries(psicoGames)) {
             const card = document.createElement('a');
             card.href = game.file;
