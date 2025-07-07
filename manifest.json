@@ -1,0 +1,16 @@
+{
+  "name": "אנגלית לפסיכומטרי",
+  "short_name": "אנגלית",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/SY9O1x2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
